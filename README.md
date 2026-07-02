@@ -1,5 +1,7 @@
 # DemandStockInsight
 
+[![CI](https://github.com/humaisik-star/DemandStockInsight/actions/workflows/ci.yml/badge.svg)](https://github.com/humaisik-star/DemandStockInsight/actions/workflows/ci.yml)
+
 A local demand and stock analysis project focused on retail inventory data. This repo explores demand behavior, stock impact, promotions, and sales patterns without relying on cloud-specific tooling.
 
 > **Status:** ✅ End-to-end. A tuned XGBoost forecasts daily demand (**R² = 0.95**
@@ -113,6 +115,27 @@ see `results/09_stock_optimization.png`.
 
 ---
 
+## 🤖 LLM Assistant (Azure OpenAI)
+
+A natural-language layer sits on top of the models via **Azure OpenAI function
+calling**. The LLM never touches raw data — it answers by calling typed tools
+(forecast lookup, stock recommendation, risk ranking, portfolio summary) defined
+in [`src/assistant_tools.py`](src/assistant_tools.py) and explains the results.
+
+```
+you> which products are most at risk of stock-out?
+assistant> The three highest-risk series are S005/P0018 (84.5% service),
+           S005/P0002 (86.9%) and S002/P0017 (87.0%). Consider raising their
+           safety stock — each has high demand volatility (σ ≈ 46).
+```
+
+Configure Azure credentials in `.env` (see [`.env.example`](.env.example)), then
+run `python assistant.py` for an interactive chat or `--ask "..."` for one-off
+questions. The tools are LLM-agnostic and fully testable offline
+(`python -m src.assistant_tools`).
+
+---
+
 ## 👥 Team
 
 | Name | Role |
@@ -128,7 +151,8 @@ see `results/09_stock_optimization.png`.
 .
 ├── data/              # Datasets (demand_forecasting.csv, inventory_...csv)
 ├── src/
-│   └── features.py    # Feature engineering (calendar + lag/rolling)
+│   ├── features.py        # Feature engineering (calendar + lag/rolling)
+│   └── assistant_tools.py # Tools the LLM assistant can call
 ├── notebooks/         # Exploratory analysis
 ├── results/           # Charts, metrics, predictions, dashboards
 ├── models/            # Trained model + best hyperparameters
@@ -136,6 +160,8 @@ see `results/09_stock_optimization.png`.
 ├── train_model.py     # Full training pipeline (Optuna + model comparison)
 ├── predict.py         # Inference on new data
 ├── stock.py           # Inventory optimization from forecasts
+├── assistant.py       # Azure OpenAI natural-language assistant
+├── .env.example       # Azure OpenAI configuration template
 ├── requirements.txt   # Python dependencies
 └── README.md          # This file
 ```
@@ -158,6 +184,10 @@ python predict.py --input data/demand_forecasting.csv
 
 # 4. Turn forecasts into stock recommendations
 python stock.py --service-level 0.95 --lead-time 7
+
+# 5. (Optional) Ask the LLM assistant in natural language
+cp .env.example .env          # then fill in your Azure OpenAI details
+python assistant.py --ask "which products are most at risk of stock-out?"
 ```
 
 Outputs land in `results/` (metrics, plots, predictions) and `models/`
