@@ -1,0 +1,13 @@
+{
+  "model": "XGBoost_tuned",
+  "xgboost_params": {
+    "n_estimators": 900,
+    "learning_rate": 0.1286235967675923,
+    "max_depth": 6,
+    "min_child_weight": 8,
+    "subsample": 0.8993522117322983,
+    "colsample_bytree": 0.8508030067928515,
+    "reg_alpha": 0.3547562184243823,
+    "reg_lambda": 0.6853802572973834
+  }
+}
