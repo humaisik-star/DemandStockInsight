@@ -97,6 +97,22 @@ and the recent 7-day demand trend — see the plots below.
 > Reproduce with `python train_model.py --trials 40`. Full metrics are written to
 > [`results/model_metrics.csv`](results/model_metrics.csv).
 
+### 🔁 Backtesting (time-series cross-validation)
+
+One split can be lucky, so the model is also backtested with **rolling-origin
+CV** — retrained on an expanding history and tested on the next unseen block of
+dates, over 5 folds:
+
+| | RMSE | MAE | R² |
+|---|---:|---:|---:|
+| Mean across folds | 15.78 | 11.28 | 0.876 |
+| Std | ±5.89 | ±4.47 | ±0.087 |
+
+Accuracy **improves as the training window grows** (R² 0.73 → 0.94 from the
+first to the last fold), confirming the model is stable over time and benefits
+from more history. Run `python backtest.py`; see `results/10_backtest.png` and
+[`results/backtest_metrics.csv`](results/backtest_metrics.csv).
+
 ### 📦 Inventory optimization
 
 Applying the forecast to stock policy at a **95% target service level** with a
@@ -157,11 +173,15 @@ questions. The tools are LLM-agnostic and fully testable offline
 ├── results/           # Charts, metrics, predictions, dashboards
 ├── models/            # Trained model + best hyperparameters
 ├── analyze_data.py    # Exploratory data analysis / charts
+├── tests/             # pytest suite (features, stock, assistant, backtest, CI)
+├── azureml/           # Azure ML job.yml + conda env + cloud training guide
 ├── train_model.py     # Full training pipeline (Optuna + model comparison)
 ├── predict.py         # Inference on new data
 ├── stock.py           # Inventory optimization from forecasts
+├── backtest.py        # Rolling-origin time-series cross-validation
 ├── assistant.py       # Azure OpenAI natural-language assistant
 ├── .env.example       # Azure OpenAI configuration template
+├── TODO.md            # Roadmap (Azure ML + Azure OpenAI + enhancements)
 ├── requirements.txt   # Python dependencies
 └── README.md          # This file
 ```

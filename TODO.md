@@ -12,9 +12,12 @@ Projenin mevcut durumu ve sıradaki adımlar. Tamamladıkça `[ ]` → `[x]` yap
 - [x] En iyi model: **XGBoost, R² ≈ 0.95** (held-out test)
 - [x] Tahmin scripti (`predict.py`)
 - [x] Stok optimizasyonu: güvenlik stoğu, reorder point, ~%28 stok azaltımı (`stock.py`)
-- [x] LLM asistanı: Azure OpenAI function-calling (`assistant.py`, `src/assistant_tools.py`)
-- [x] Test suite: 21 test, pytest (`tests/`)
+- [x] LLM asistanı: Azure OpenAI function-calling (`assistant.py`, `src/assistant_tools.py`) — **#3 tamam**
+- [x] README'de gerçek metrik tabloları (forecast + stok + backtest) — **#4 tamam**
+- [x] Backtesting: rolling-origin zaman serisi CV (`backtest.py`) — **#2 tamam**
+- [x] Test suite: 24 test, pytest (`tests/`)
 - [x] CI: GitHub Actions ile her push'ta otomatik test (`.github/workflows/ci.yml`)
+- [x] Azure ML scaffolding hazır (`azureml/`) — çalıştırmak için sadece abonelik gerekiyor
 
 ---
 
@@ -44,10 +47,13 @@ Projenin mevcut durumu ve sıradaki adımlar. Tamamladıkça `[ ]` → `[x]` yap
 - [ ] Azure ML **Workspace** oluştur (portal veya CLI)
 
 ### Veri & Eğitim
-- [ ] Veriyi Azure'a yükle (Blob Storage / ML Datastore)
-- [ ] `train_model.py` için bir **job.yml** yaz (compute + environment + komut)
-- [ ] `az ml job create -f job.yml` ile bulutta eğit
-- [ ] Modeli **Model Registry**'ye kaydet (versiyonlu)
+> Kod hazır: `azureml/train-job.yml`, `azureml/conda.yml` ve adım adım komutlar
+> `azureml/README.md` içinde. Aşağıdakiler sadece Azure hesabı gerektiriyor.
+- [ ] `az login` + workspace oluştur (bkz. `azureml/README.md`)
+- [ ] Compute cluster oluştur (`cpu-cluster`, scale-to-zero)
+- [x] `train_model.py` için **job.yml** hazır (`azureml/train-job.yml`)
+- [ ] `az ml job create -f azureml/train-job.yml --web` ile bulutta eğit
+- [ ] Modeli **Model Registry**'ye kaydet (`az ml model create ...`)
 
 ### Servis & Otomasyon
 - [ ] **Managed Online Endpoint** (gerçek zamanlı) veya **Batch Endpoint** (günlük toplu forecast) deploy et

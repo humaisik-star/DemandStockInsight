@@ -1,0 +1,28 @@
+# Azure ML v2 command job: run the SAME train_model.py on cloud compute.
+# Submit with:  az ml job create -f azureml/train-job.yml --web
+$schema: https://azuremlschemas.azureedge.net/latest/commandJob.schema.json
+
+# Upload the whole repo (root is one level up from this file). .gitignore is
+# respected, so .venv/ and large caches are not uploaded.
+code: ..
+
+# The exact command that ran locally — no code changes needed for the cloud.
+command: python train_model.py --trials 40
+
+environment:
+  # Base image ships with OpenMP (libgomp), which XGBoost needs.
+  image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu20.04:latest
+  conda_file: conda.yml
+
+# Create this cluster once (see README.md). min-instances 0 => scales to zero
+# when idle, so you only pay while training.
+compute: azureml:cpu-cluster
+
+# Capture the trained model + metrics as a downloadable/registerable output.
+outputs:
+  artifacts:
+    type: uri_folder
+
+display_name: demand-forecast-training
+experiment_name: demand-forecasting
+description: Feature engineering + Optuna-tuned XGBoost demand forecaster.

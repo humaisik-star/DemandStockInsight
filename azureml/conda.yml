@@ -1,0 +1,17 @@
+# Conda environment for the Azure ML training job.
+# Versions are left loose so they resolve cleanly on Azure's base image;
+# pin them (see ../requirements.txt) if you need bit-for-bit reproducibility.
+name: demand-forecast-env
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - pandas
+      - numpy
+      - scikit-learn
+      - xgboost
+      - optuna
+      - joblib
+      - matplotlib
