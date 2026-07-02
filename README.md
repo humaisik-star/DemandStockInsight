@@ -16,6 +16,23 @@ This repository analyzes retail demand data from multiple stores and products. I
 
 ---
 
+## 📊 Visual Highlights
+
+Check out the key demand patterns discovered in the analysis dashboard and chart gallery below.
+
+- **Interactive dashboard:** `results/dashboard.html`
+- **Key charts:** trend, category demand, promotion impact, seasonality, store comparison, price vs demand
+
+### Chart gallery
+
+| Monthly trend | Demand by category | Promotion impact |
+| --- | --- | --- |
+| ![Monthly demand trend](results/01_monthly_demand_trend.png) | ![Demand by category](results/02_demand_by_category.png) | ![Promotion impact](results/03_promotion_effect.png) |
+| Seasonality | Store demand | Price vs demand |
+| ![Demand by season](results/04_demand_by_season.png) | ![Demand by store](results/05_demand_by_store.png) | ![Price vs demand](results/06_price_vs_demand.png) |
+
+---
+
 ## 📦 Dataset
 
 - **File:** `data/inventory_demand_forecasting_dataset.csv`

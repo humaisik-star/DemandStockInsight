@@ -1,0 +1,8 @@
+toplam_kayit: 76000
+tarih_baslangic: 2022-01-01
+tarih_bitis: 2024-01-30
+magaza: 5
+urun: 20
+ort_talep: 104.3
+promo_etkisi_yuzde: 29.7
+en_yuksek_kategori: Groceries
