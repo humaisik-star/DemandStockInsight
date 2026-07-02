@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DemandStockInsight — Talep Analiz Panosu</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{--green:#1F6F4A;--acc:#2E5C8A;--bg:#f4f7f5;--card:#ffffff;--txt:#222;--muted:#667;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--txt);padding:24px;}
+  .wrap{max-width:1100px;margin:0 auto;}
+  header{margin-bottom:20px;}
+  h1{font-size:26px;color:var(--green);margin-bottom:4px;}
+  .sub{color:var(--muted);font-size:14px;}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:20px 0;}
+  .stat{background:var(--card);border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid #ecece0;}
+  .stat .v{font-size:24px;font-weight:700;color:var(--green);}
+  .stat .l{font-size:12px;color:var(--muted);margin-top:4px;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:16px;}
+  .card{background:var(--card);border-radius:12px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid #ecece0;}
+  .card h3{font-size:15px;margin-bottom:12px;color:#333;}
+  .full{grid-column:1/-1;}
+  canvas{max-height:320px;}
+  footer{margin-top:24px;color:var(--muted);font-size:12px;text-align:center;}
+  .badge{display:inline-block;background:#e7f2ec;color:var(--green);border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600;margin-left:6px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>📊 DemandStockInsight — Talep Analiz Panosu <span class="badge" id="period"></span></h1>
+    <div class="sub">Perakende satış verisi üzerinde talep, promosyon ve mevsim analizi · Etkileşimli grafikler</div>
+  </header>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="grid">
+    <div class="card full"><h3>Aylık Toplam Talep Trendi</h3><canvas id="trend"></canvas></div>
+    <div class="card"><h3>Kategoriye Göre Toplam Talep</h3><canvas id="cat"></canvas></div>
+    <div class="card"><h3>Promosyonun Ortalama Talebe Etkisi</h3><canvas id="promo"></canvas></div>
+    <div class="card"><h3>Mevsime Göre Ortalama Talep</h3><canvas id="season"></canvas></div>
+    <div class="card"><h3>Mağazaya Göre Toplam Talep</h3><canvas id="store"></canvas></div>
+    <div class="card full"><h3>Kategori Bazında Aylık Talep (zaman içinde)</h3><canvas id="catTime"></canvas></div>
+  </div>
+
+  <footer>Veri: demand_forecasting.csv · Grafikler verinin gerçek değerlerinden hesaplanmıştır · DemandStockInsight</footer>
+</div>
+
+<script>
+const D = {"monthly": {"labels": ["2022-01", "2022-02", "2022-03", "2022-04", "2022-05", "2022-06", "2022-07", "2022-08", "2022-09", "2022-10", "2022-11", "2022-12", "2023-01", "2023-02", "2023-03", "2023-04", "2023-05", "2023-06", "2023-07", "2023-08", "2023-09", "2023-10", "2023-11", "2023-12", "2024-01"], "values": [341544, 319883, 353173, 305076, 239112, 345725, 259736, 370437, 324264, 329865, 324406, 349431, 339865, 200259, 351233, 251824, 297319, 358351, 369946, 372344, 320325, 262590, 320848, 326389, 294159]}, "category": {"labels": ["Groceries", "Clothing", "Furniture", "Toys", "Electronics"], "values": [3677684, 1369456, 1006590, 985338, 889036]}, "promo": {"labels": ["Promosyon Yok", "Promosyon Var"], "values": [95.0, 123.3]}, "season": {"labels": ["Winter", "Spring", "Summer", "Autumn"], "values": [103.4, 97.7, 112.9, 103.4]}, "store": {"labels": ["S001", "S002", "S003", "S004", "S005"], "values": [1547573, 1625471, 1618324, 1529651, 1607085]}, "catTime": {"labels": ["2022-01", "2022-02", "2022-03", "2022-04", "2022-05", "2022-06", "2022-07", "2022-08", "2022-09", "2022-10", "2022-11", "2022-12", "2023-01", "2023-02", "2023-03", "2023-04", "2023-05", "2023-06", "2023-07", "2023-08", "2023-09", "2023-10", "2023-11", "2023-12", "2024-01"], "series": {"Clothing": [62524, 59037, 52905, 52184, 54551, 50560, 53875, 53243, 51283, 52065, 51085, 63686, 65338, 56517, 52084, 50510, 53230, 50884, 53101, 53766, 49631, 54192, 50969, 63157, 59079], "Electronics": [38488, 36471, 40102, 34399, 25088, 37882, 26152, 41156, 37763, 38554, 38404, 40946, 38775, 20101, 40340, 27461, 34118, 39102, 38887, 40486, 37848, 27926, 38993, 36988, 32606], "Furniture": [45031, 42946, 46379, 39967, 26675, 42663, 27309, 46444, 44616, 45709, 44355, 45739, 43518, 19173, 47382, 28079, 35862, 43638, 46522, 46769, 43787, 31607, 44241, 41384, 36795], "Groceries": [150434, 139958, 157118, 135607, 110333, 173699, 132940, 185140, 147324, 149314, 147730, 153901, 149567, 91933, 156755, 116660, 134289, 180955, 186346, 186551, 146050, 122904, 145361, 144786, 132029], "Toys": [45067, 41471, 56669, 42919, 22465, 40921, 19460, 44454, 43278, 44223, 42832, 45159, 42667, 12535, 54672, 29114, 39820, 43772, 45090, 44772, 43009, 25961, 41284, 40074, 33650]}}, "stats": {"rows": 76000, "stores": 5, "products": 20, "avg": 104.3, "total": 7928104, "promoLift": 29.7, "topCat": "Groceries", "start": "2022-01-01", "end": "2024-01-30"}};
+const GREEN="#1F6F4A", ACC="#2E5C8A";
+const PAL=["#1F6F4A","#2E5C8A","#C0A000","#B5533C","#6A4C93"];
+const fmt=n=>n.toLocaleString('tr-TR');
+
+// period badge
+document.getElementById('period').textContent = D.stats.start + " → " + D.stats.end;
+
+// stat cards
+const s=D.stats;
+const cards=[
+  ["Toplam Kayıt", fmt(s.rows)],
+  ["Toplam Talep", fmt(s.total)],
+  ["Ortalama Talep", s.avg],
+  ["Promosyon Etkisi", "+"+s.promoLift+"%"],
+  ["En Çok Talep", s.topCat],
+  ["Mağaza / Ürün", s.stores+" / "+s.products],
+];
+document.getElementById('stats').innerHTML = cards.map(c=>`<div class="stat"><div class="v">${c[1]}</div><div class="l">${c[0]}</div></div>`).join('');
+
+const baseOpts=(pfx="")=>({responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:x=>pfx+fmt(x.parsed.y)}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>fmt(v)}}}});
+
+new Chart(trend,{type:'line',data:{labels:D.monthly.labels,datasets:[{data:D.monthly.values,borderColor:GREEN,backgroundColor:'rgba(31,111,74,.10)',fill:true,tension:.3,pointRadius:2}]},options:baseOpts()});
+
+new Chart(cat,{type:'bar',data:{labels:D.category.labels,datasets:[{data:D.category.values,backgroundColor:PAL}]},options:{...baseOpts(),indexAxis:'y'}});
+
+new Chart(promo,{type:'bar',data:{labels:D.promo.labels,datasets:[{data:D.promo.values,backgroundColor:[ACC,GREEN]}]},options:baseOpts()});
+
+new Chart(season,{type:'bar',data:{labels:D.season.labels,datasets:[{data:D.season.values,backgroundColor:PAL}]},options:baseOpts()});
+
+new Chart(store,{type:'bar',data:{labels:D.store.labels,datasets:[{data:D.store.values,backgroundColor:GREEN}]},options:baseOpts()});
+
+const cats=Object.keys(D.catTime.series);
+new Chart(catTime,{type:'line',data:{labels:D.catTime.labels,datasets:cats.map((c,i)=>({label:c,data:D.catTime.series[c],borderColor:PAL[i%PAL.length],backgroundColor:PAL[i%PAL.length],tension:.3,pointRadius:0,borderWidth:2}))},options:{responsive:true,plugins:{legend:{display:true,position:'bottom'},tooltip:{callbacks:{label:x=>x.dataset.label+": "+fmt(x.parsed.y)}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>fmt(v)}}}}});
+</script>
+</body>
+</html>
