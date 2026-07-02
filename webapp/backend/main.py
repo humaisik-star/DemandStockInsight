@@ -12,9 +12,9 @@ import json
 import os
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
 from tools import TOOL_SPECS, dispatch
@@ -111,10 +111,30 @@ def health():
     return {"status": "ok"}
 
 
+@app.exception_handler(Exception)
+async def json_error_handler(request: Request, exc: Exception):
+    """Return JSON (not a raw HTML 500) so the frontend can always parse it."""
+    return JSONResponse(
+        status_code=200,
+        content={
+            "answer": "Şu an bir sorun oluştu, lütfen birkaç saniye sonra tekrar deneyin.",
+            "tools_used": [],
+            "error": str(exc),
+        },
+    )
+
+
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-    messages += [{"role": t.role, "content": t.content} for t in req.history]
-    messages.append({"role": "user", "content": req.message})
-    answer, tools_used = run_turn(messages)
-    return ChatResponse(answer=answer or "", tools_used=tools_used)
+    try:
+        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+        messages += [{"role": t.role, "content": t.content} for t in req.history]
+        messages.append({"role": "user", "content": req.message})
+        answer, tools_used = run_turn(messages)
+        return ChatResponse(answer=answer or "", tools_used=tools_used)
+    except Exception as e:
+        # Never surface a raw 500; hand the frontend a clean JSON message.
+        return ChatResponse(
+            answer=f"İstek işlenemedi ({type(e).__name__}). Model uyanıyor olabilir, tekrar deneyin.",
+            tools_used=[],
+        )
