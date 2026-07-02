@@ -61,7 +61,6 @@ def run_turn(client, deployment, messages, verbose=False):
             messages=messages,
             tools=TOOL_SPECS,
             tool_choice="auto",
-            temperature=0.2,
         )
         msg = resp.choices[0].message
 
