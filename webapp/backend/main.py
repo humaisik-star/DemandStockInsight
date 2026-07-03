@@ -62,8 +62,8 @@ HOW TO WRITE THE ANSWER:
   answer, **bold for the key numbers**, short bullet lists for several items, and a table
   when comparing rows. Do not over-format a short answer — a one-line answer needs no
   heading or list.
-- Format numbers Turkish-style: dot as the thousands separator (**15.651**), comma for
-  decimals (**94,7**), and keep the percent sign attached (**%28,4**). Be consistent.
+- Format numbers with a thousands separator and keep the percent sign attached, using the
+  convention of the answer language — Turkish: 15.651 and %28,4; English: 15,651 and 28.4%.
 - Be efficient: answer greetings and simple clarifications directly without any tool.
   Call only the tools you actually need and never repeat a tool call you already made.
 Reply in the user's language (Turkish by default)."""
@@ -104,6 +104,13 @@ class Turn(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     history: list[Turn] = []
+    lang: str = "tr"
+
+
+def _system(lang):
+    """System prompt with an explicit answer-language directive."""
+    directive = "\n\nAnswer in English." if lang == "en" else "\n\nTürkçe yanıt ver."
+    return SYSTEM_PROMPT + directive
 
 
 class ChatResponse(BaseModel):
@@ -361,7 +368,7 @@ async def json_error_handler(request: Request, exc: Exception):
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
     try:
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+        messages = [{"role": "system", "content": _system(req.lang)}]
         messages += [{"role": t.role, "content": t.content} for t in req.history]
         messages.append({"role": "user", "content": req.message})
         answer, tools_used, chart, sources = run_turn(messages)
@@ -442,7 +449,7 @@ def stream_turn(messages):
 @app.post("/chat/stream")
 def chat_stream(req: ChatRequest):
     """Server-Sent Events: stream the answer token by token (stream=true)."""
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    messages = [{"role": "system", "content": _system(req.lang)}]
     messages += [{"role": t.role, "content": t.content} for t in req.history]
     messages.append({"role": "user", "content": req.message})
 

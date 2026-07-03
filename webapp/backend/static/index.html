@@ -64,6 +64,10 @@
       align-items: center; gap: 5px; font-size: 13px; font-weight: 500; text-decoration: none;
       transition: all .15s; }
     .pdf-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .lang-btn { border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+      height: 38px; min-width: 42px; padding: 0 10px; border-radius: var(--radius-sm); cursor: pointer;
+      font-size: 13px; font-weight: 700; transition: all .15s; }
+    .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
     /* Critical stock auto-alert banner */
     .alert-banner { display: none; align-items: center; gap: 10px; margin-bottom: 12px;
       background: color-mix(in srgb, var(--crit) 13%, transparent);
@@ -253,13 +257,14 @@
     <div class="bar">
       <div class="brand"><span class="logo">📦</span> Demand &amp; Stock Insight</div>
       <nav>
-        <button class="tab active" data-tab="chat">💬 Sohbet</button>
-        <button class="tab" data-tab="dash">📊 Dashboard</button>
-        <button class="tab" data-tab="reports">📈 Raporlar</button>
-        <button class="tab" data-tab="about">ℹ️ Hakkında</button>
+        <button class="tab active" data-tab="chat" data-i18n="tab_chat">💬 Sohbet</button>
+        <button class="tab" data-tab="dash" data-i18n="tab_dash">📊 Dashboard</button>
+        <button class="tab" data-tab="reports" data-i18n="tab_reports">📈 Raporlar</button>
+        <button class="tab" data-tab="about" data-i18n="tab_about">ℹ️ Hakkında</button>
       </nav>
       <div class="spacer"></div>
-      <a class="pdf-btn" href="/report.pdf" title="Ürün/stok raporunu PDF indir">📄 PDF rapor</a>
+      <a class="pdf-btn" href="/report.pdf" data-i18n="pdf_btn">📄 PDF rapor</a>
+      <button class="lang-btn" id="langBtn" title="Language / Dil">EN</button>
       <button class="theme-btn" id="theme" title="Tema">🌙</button>
     </div>
   </header>
@@ -273,19 +278,19 @@
         <div class="empty-state" id="emptyState">
           <div class="es-logo">📦</div>
           <h2>Demand &amp; Stock Insight</h2>
-          <p>Talep tahmini, stok politikası ve envanter kavramlarını doğal dille sor. Başlamak için bir örnek seç:</p>
+          <p data-i18n="es_desc">Talep tahmini, stok politikası ve envanter kavramlarını doğal dille sor. Başlamak için bir örnek seç:</p>
           <div class="es-cards">
-            <button class="es-card" data-q="Yönetici özeti ver"><b>📋 Yönetici özeti</b><span>KPI'lar + öncelikli aksiyonlar</span></button>
-            <button class="es-card" data-q="S001 P0001 talep trendi"><b>📈 Talep trendi</b><span>mini grafik ile</span></button>
-            <button class="es-card" data-q="EOQ nedir?"><b>📚 EOQ nedir?</b><span>kavram + kaynak</span></button>
-            <button class="es-card" data-q="Anomalileri açıkla"><b>🚨 Anomaliler</b><span>tespit + açıklama</span></button>
+            <button class="es-card" data-qk="card1_q"><b data-i18n="card1_t">📋 Yönetici özeti</b><span data-i18n="card1_s">KPI'lar + öncelikli aksiyonlar</span></button>
+            <button class="es-card" data-qk="card2_q"><b data-i18n="card2_t">📈 Talep trendi</b><span data-i18n="card2_s">mini grafik ile</span></button>
+            <button class="es-card" data-qk="card3_q"><b data-i18n="card3_t">📚 EOQ nedir?</b><span data-i18n="card3_s">kavram + kaynak</span></button>
+            <button class="es-card" data-qk="card4_q"><b data-i18n="card4_t">🚨 Anomaliler</b><span data-i18n="card4_s">tespit + açıklama</span></button>
           </div>
         </div>
       </div>
       <div class="composer">
         <div class="inputrow">
-          <textarea id="input" rows="1" placeholder="Talep, stok, ABC, EOQ hakkında sor..."></textarea>
-          <button id="send">Gönder</button>
+          <textarea id="input" rows="1" data-i18n-ph="input_ph" placeholder="Talep, stok, ABC, EOQ hakkında sor..."></textarea>
+          <button id="send" data-i18n="send">Gönder</button>
         </div>
       </div>
     </section>
@@ -294,15 +299,15 @@
     <section class="panel" id="dash-panel">
       <div class="kpis" id="kpis"></div>
       <div class="grid2" style="margin-top:16px">
-        <div class="card"><h3>Stok durumu (uyarılar)</h3><div class="bars" id="alertBars"></div></div>
-        <div class="card"><h3>ABC dağılımı</h3><div class="bars" id="abcBars"></div></div>
+        <div class="card"><h3 data-i18n="dash_alerts">Stok durumu (uyarılar)</h3><div class="bars" id="alertBars"></div></div>
+        <div class="card"><h3 data-i18n="dash_abc">ABC dağılımı</h3><div class="bars" id="abcBars"></div></div>
       </div>
-      <h2 class="section">Ürün tablosu</h2>
+      <h2 class="section" data-i18n="dash_table">Ürün tablosu</h2>
       <div class="filters">
-        <input id="fSearch" placeholder="🔍 Mağaza / ürün ara..." />
-        <select id="fStore"><option value="">Tüm mağazalar</option></select>
-        <select id="fAbc"><option value="">Tüm ABC</option><option>A</option><option>B</option><option>C</option></select>
-        <select id="fStatus"><option value="">Tüm durumlar</option><option>CRITICAL</option><option>REORDER</option><option>OK</option></select>
+        <input id="fSearch" data-i18n-ph="f_search" placeholder="🔍 Mağaza / ürün ara..." />
+        <select id="fStore"><option value="" data-i18n="f_all_stores">Tüm mağazalar</option></select>
+        <select id="fAbc"><option value="" data-i18n="f_all_abc">Tüm ABC</option><option>A</option><option>B</option><option>C</option></select>
+        <select id="fStatus"><option value="" data-i18n="f_all_status">Tüm durumlar</option><option>CRITICAL</option><option>REORDER</option><option>OK</option></select>
       </div>
       <div class="tablewrap"><table id="invTable">
         <colgroup>
@@ -311,11 +316,11 @@
           <col style="width:11%"><col style="width:8%"><col style="width:12%">
         </colgroup>
         <thead><tr>
-          <th data-k="Store ID">Mağaza</th><th data-k="Product ID">Ürün</th>
-          <th data-k="abc_class">ABC</th><th data-k="annual_revenue" class="num">Yıllık ciro</th>
-          <th data-k="EOQ" class="num">EOQ</th><th data-k="reorder_point" class="num">Reorder</th>
-          <th data-k="current_inventory" class="num">Mevcut</th><th data-k="days_of_cover" class="num">Gün</th>
-          <th data-k="alert_status">Durum</th>
+          <th data-k="Store ID" data-i18n="th_store">Mağaza</th><th data-k="Product ID" data-i18n="th_product">Ürün</th>
+          <th data-k="abc_class">ABC</th><th data-k="annual_revenue" class="num" data-i18n="th_revenue">Yıllık ciro</th>
+          <th data-k="EOQ" class="num">EOQ</th><th data-k="reorder_point" class="num" data-i18n="th_reorder">Reorder</th>
+          <th data-k="current_inventory" class="num" data-i18n="th_current">Mevcut</th><th data-k="days_of_cover" class="num" data-i18n="th_days">Gün</th>
+          <th data-k="alert_status" data-i18n="th_status">Durum</th>
         </tr></thead>
         <tbody id="invBody"></tbody>
       </table></div>
@@ -324,43 +329,43 @@
 
     <!-- REPORTS -->
     <section class="panel" id="reports-panel">
-      <h2 class="section">Model karşılaştırması (held-out test)</h2>
+      <h2 class="section" data-i18n="rep_model">Model karşılaştırması (held-out test)</h2>
       <div class="tablewrap"><table id="tModel"></table></div>
-      <h2 class="section">Backtesting (rolling-origin CV)</h2>
+      <h2 class="section" data-i18n="rep_backtest">Backtesting (rolling-origin CV)</h2>
       <div class="tablewrap"><table id="tBack"></table></div>
-      <h2 class="section">Olasılıksal tahmin (quantile pinball loss)</h2>
+      <h2 class="section" data-i18n="rep_quantile">Olasılıksal tahmin (quantile pinball loss)</h2>
       <div class="tablewrap"><table id="tQuant"></table></div>
-      <h2 class="section">ABC-XYZ segmentasyonu (değer × talep değişkenliği)</h2>
+      <h2 class="section" data-i18n="rep_matrix">ABC-XYZ segmentasyonu (değer × talep değişkenliği)</h2>
       <div id="matrix" class="matrix"></div>
-      <h2 class="section">Tespit edilen anomaliler</h2>
+      <h2 class="section" data-i18n="rep_anom">Tespit edilen anomaliler</h2>
       <div class="tablewrap"><table id="tAnom"></table></div>
     </section>
 
     <!-- ABOUT -->
     <section class="panel about" id="about-panel">
       <div class="card">
-        <h3>Proje hakkında</h3>
-        <p>Perakende talep tahmini ve stok optimizasyonu için uçtan uca bir ML sistemi.
+        <h3 data-i18n="about_title">Proje hakkında</h3>
+        <p data-i18n-html="about_p">Perakende talep tahmini ve stok optimizasyonu için uçtan uca bir ML sistemi.
         XGBoost modeli günlük talebi tahmin ediyor (held-out <b>R² ≈ 0.95</b>); tahminler
         güvenlik stoğu, ABC analizi, EOQ ve yeniden sipariş politikasına dönüşüyor. Doğal dil
         asistanı (Azure OpenAI) bu çıktıları araç çağırarak yorumluyor.</p>
-        <h3 style="margin-top:18px">Mimari</h3>
+        <h3 style="margin-top:18px" data-i18n="about_arch">Mimari</h3>
         <div class="flow">
           <span class="node">Web UI</span><span class="arrow">→</span>
           <span class="node">FastAPI (App Service)</span><span class="arrow">→</span>
           <span class="node">Azure OpenAI + Tools</span><span class="arrow">·</span>
           <span class="node">XGBoost (Azure ML)</span>
         </div>
-        <h3 style="margin-top:18px">Teknolojiler</h3>
+        <h3 style="margin-top:18px" data-i18n="about_tech">Teknolojiler</h3>
         <div class="stack">
           <span>Python</span><span>XGBoost</span><span>scikit-learn</span><span>Optuna</span>
           <span>SHAP</span><span>FastAPI</span><span>Azure ML</span><span>Azure OpenAI</span><span>pytest + CI</span>
         </div>
-        <h3 style="margin-top:18px">Özellikler</h3>
-        <p class="muted">Feature engineering (lag/rolling) · Optuna tuning · time-series backtesting ·
+        <h3 style="margin-top:18px" data-i18n="about_feat">Özellikler</h3>
+        <p class="muted" data-i18n="about_feat_p">Feature engineering (lag/rolling) · Optuna tuning · time-series backtesting ·
         quantile tahmin aralıkları · SHAP açıklanabilirlik · ABC / EOQ / reorder point ·
         stok tükenme uyarıları · function-calling asistan.</p>
-        <p style="margin-top:14px"><a href="https://github.com/humaisik-star/DemandStockInsight" target="_blank">GitHub deposu →</a></p>
+        <p style="margin-top:14px"><a href="https://github.com/humaisik-star/DemandStockInsight" target="_blank" data-i18n="about_github">GitHub deposu →</a></p>
       </div>
     </section>
   </main>
@@ -368,6 +373,121 @@
   <script>
     const API = "";
     const $ = s => document.querySelector(s);
+
+    // ---- i18n (TR / EN) ----
+    const I18N = {
+      tr: {
+        tab_chat: "💬 Sohbet", tab_dash: "📊 Dashboard", tab_reports: "📈 Raporlar", tab_about: "ℹ️ Hakkında",
+        pdf_btn: "📄 PDF rapor",
+        es_desc: "Talep tahmini, stok politikası ve envanter kavramlarını doğal dille sor. Başlamak için bir örnek seç:",
+        card1_t: "📋 Yönetici özeti", card1_s: "KPI'lar + öncelikli aksiyonlar", card1_q: "Yönetici özeti ver",
+        card2_t: "📈 Talep trendi", card2_s: "mini grafik ile", card2_q: "S001 P0001 talep trendi",
+        card3_t: "📚 EOQ nedir?", card3_s: "kavram + kaynak", card3_q: "EOQ nedir?",
+        card4_t: "🚨 Anomaliler", card4_s: "tespit + açıklama", card4_q: "Anomalileri açıkla",
+        input_ph: "Talep, stok, ABC, EOQ hakkında sor...", send: "Gönder",
+        kpi_reduction: "Stok azaltımı", kpi_service: "Hizmet seviyesi", kpi_records: "veri kaydı",
+        d_skus: "Toplam SKU", d_skus_s: "ürün serisi", d_acc: "Model doğruluğu", d_acc_s: "held-out test",
+        d_cut: "Stok azaltımı", d_cut_s: "model vs naive", d_svc: "Servis seviyesi", d_svc_s: "ortalama",
+        d_reorder: "Reorder uyarısı", d_reorder_s: "SKU sipariş bekliyor", d_a: "A-sınıfı SKU", d_a_s: "cironun ~%80'i",
+        crit_a: "ürün kritik stokta — stok-out riski var.", crit_view: "Detayı gör", crit_close: "Kapat",
+        crit_q: "Kritik stoktaki ürünleri listele",
+        fu_label: "Bunu da sorabilirsin:", copy: "📋 Kopyala", copied: "✓ Kopyalandı",
+        err: "⚠️ Bir aksaklık oldu, lütfen birkaç saniye sonra tekrar dene.", empty: "(boş yanıt)", unit_adet: "adet",
+        dash_alerts: "Stok durumu (uyarılar)", dash_abc: "ABC dağılımı", dash_table: "Ürün tablosu",
+        f_search: "🔍 Mağaza / ürün ara...", f_all_stores: "Tüm mağazalar", f_all_abc: "Tüm ABC", f_all_status: "Tüm durumlar",
+        th_store: "Mağaza", th_product: "Ürün", th_revenue: "Yıllık ciro", th_reorder: "Reorder",
+        th_current: "Mevcut", th_days: "Gün", th_status: "Durum", tbl_count: "ürün gösteriliyor", class_prefix: "Sınıf",
+        rep_model: "Model karşılaştırması (held-out test)", rep_backtest: "Backtesting (rolling-origin CV)",
+        rep_quantile: "Olasılıksal tahmin (quantile pinball loss)", rep_matrix: "ABC-XYZ segmentasyonu (değer × talep değişkenliği)",
+        rep_anom: "Tespit edilen anomaliler", no_data: "Veri yok", no_anom: "Anomali tespit edilmedi",
+        mx_x: "stabil", mx_y: "değişken", mx_z: "erratik",
+        about_title: "Proje hakkında",
+        about_p: "Perakende talep tahmini ve stok optimizasyonu için uçtan uca bir ML sistemi. XGBoost modeli günlük talebi tahmin ediyor, held-out <b>R² ≈ 0.95</b>; tahminler güvenlik stoğu, ABC analizi, EOQ ve yeniden sipariş politikasına dönüşüyor. Doğal dil asistanı Azure OpenAI bu çıktıları araç çağırarak yorumluyor.",
+        about_arch: "Mimari", about_tech: "Teknolojiler", about_feat: "Özellikler",
+        about_feat_p: "Feature engineering (lag/rolling) · Optuna tuning · time-series backtesting · quantile tahmin aralıkları · SHAP açıklanabilirlik · ABC / EOQ / reorder point · stok tükenme uyarıları · function-calling asistan.",
+        about_github: "GitHub deposu →",
+      },
+      en: {
+        tab_chat: "💬 Chat", tab_dash: "📊 Dashboard", tab_reports: "📈 Reports", tab_about: "ℹ️ About",
+        pdf_btn: "📄 PDF report",
+        es_desc: "Ask about demand forecasts, stock policy and inventory concepts in plain language. Pick an example to start:",
+        card1_t: "📋 Executive summary", card1_s: "KPIs + priority actions", card1_q: "Give an executive summary",
+        card2_t: "📈 Demand trend", card2_s: "with a mini chart", card2_q: "S001 P0001 demand trend",
+        card3_t: "📚 What is EOQ?", card3_s: "concept + source", card3_q: "What is EOQ?",
+        card4_t: "🚨 Anomalies", card4_s: "detection + explanation", card4_q: "Explain the anomalies",
+        input_ph: "Ask about demand, stock, ABC, EOQ...", send: "Send",
+        kpi_reduction: "Inventory cut", kpi_service: "Service level", kpi_records: "data records",
+        d_skus: "Total SKUs", d_skus_s: "product series", d_acc: "Model accuracy", d_acc_s: "held-out test",
+        d_cut: "Inventory cut", d_cut_s: "model vs naive", d_svc: "Service level", d_svc_s: "average",
+        d_reorder: "Reorder alerts", d_reorder_s: "SKUs awaiting order", d_a: "Class-A SKUs", d_a_s: "~80% of revenue",
+        crit_a: "products are critically low — stockout risk.", crit_view: "View details", crit_close: "Dismiss",
+        crit_q: "List the critically low products",
+        fu_label: "You could also ask:", copy: "📋 Copy", copied: "✓ Copied",
+        err: "⚠️ Something went wrong, please try again in a moment.", empty: "(empty response)", unit_adet: "units",
+        dash_alerts: "Stock status (alerts)", dash_abc: "ABC distribution", dash_table: "Product table",
+        f_search: "🔍 Search store / product...", f_all_stores: "All stores", f_all_abc: "All ABC", f_all_status: "All statuses",
+        th_store: "Store", th_product: "Product", th_revenue: "Annual revenue", th_reorder: "Reorder",
+        th_current: "Current", th_days: "Days", th_status: "Status", tbl_count: "products shown", class_prefix: "Class",
+        rep_model: "Model comparison (held-out test)", rep_backtest: "Backtesting (rolling-origin CV)",
+        rep_quantile: "Probabilistic forecast (quantile pinball loss)", rep_matrix: "ABC-XYZ segmentation (value × demand variability)",
+        rep_anom: "Detected anomalies", no_data: "No data", no_anom: "No anomalies detected",
+        mx_x: "stable", mx_y: "variable", mx_z: "erratic",
+        about_title: "About the project",
+        about_p: "An end-to-end ML system for retail demand forecasting and inventory optimization. An XGBoost model predicts daily demand, held-out <b>R² ≈ 0.95</b>; forecasts turn into safety stock, ABC analysis, EOQ and reorder policy. A natural-language assistant on Azure OpenAI explains these outputs by calling tools.",
+        about_arch: "Architecture", about_tech: "Technologies", about_feat: "Features",
+        about_feat_p: "Feature engineering (lag/rolling) · Optuna tuning · time-series backtesting · quantile prediction intervals · SHAP explainability · ABC / EOQ / reorder point · stockout alerts · function-calling assistant.",
+        about_github: "GitHub repository →",
+      },
+    };
+    const FOLLOWUPS_I18N = {
+      tr: {
+        bilgi_ara: ["Güvenlik stoğu nasıl hesaplanır?", "Newsvendor modeli nedir?", "ABC-XYZ neyi ölçer?"],
+        get_demand_forecast: ["Bu ürün için stok önerisi ver", "En riskli ürünler hangileri?", "ABC sınıfı nedir?"],
+        get_stock_recommendation: ["Bu ürünün EOQ değeri nedir?", "Newsvendor sipariş miktarı nedir?", "Yönetici özeti ver"],
+        yonetici_ozeti: ["En riskli ürünleri listele", "Anomalileri açıkla", "ABC-XYZ analizini göster"],
+        abc_summary: ["ABC-XYZ analizini göster", "En değerli ürünler hangileri?", "EOQ nedir?"],
+        list_stockout_alerts: ["Yönetici özeti ver", "ABC analizini özetle", "Anomalileri açıkla"],
+        whatif_simulasyon: ["Fiyatı %10 düşürürsem ne olur?", "Bu ürün için stok önerisi ver", "Talep trendi nasıl?"],
+        _default: ["Yönetici özeti ver", "ABC analizini özetle", "EOQ nedir?"],
+      },
+      en: {
+        bilgi_ara: ["How is safety stock calculated?", "What is the newsvendor model?", "What does ABC-XYZ measure?"],
+        get_demand_forecast: ["Give a stock recommendation for this product", "Which products are most at risk?", "What is its ABC class?"],
+        get_stock_recommendation: ["What is its EOQ?", "What is the newsvendor order quantity?", "Give an executive summary"],
+        yonetici_ozeti: ["List the riskiest products", "Explain the anomalies", "Show the ABC-XYZ analysis"],
+        abc_summary: ["Show the ABC-XYZ analysis", "Which are the most valuable products?", "What is EOQ?"],
+        list_stockout_alerts: ["Give an executive summary", "Summarize the ABC analysis", "Explain the anomalies"],
+        whatif_simulasyon: ["What if I lower the price by 10%?", "Give a stock recommendation for this product", "How is the demand trend?"],
+        _default: ["Give an executive summary", "Summarize the ABC analysis", "What is EOQ?"],
+      },
+    };
+    let LANG = localStorage.getItem("lang") || "tr";
+    const T = k => (I18N[LANG][k] ?? I18N.tr[k] ?? k);
+    const trNum = v => String(v).replace(".", ",");
+    const pct = v => LANG === "tr" ? `%${trNum(v)}` : `${v}%`;
+    const followupsFor = tools => {
+      const m = FOLLOWUPS_I18N[LANG];
+      for (const t of (tools || [])) if (m[t]) return m[t];
+      return m._default;
+    };
+    const langBtn = $("#langBtn");
+    function applyI18n() {
+      const d = I18N[LANG];
+      document.documentElement.lang = LANG;
+      document.querySelectorAll("[data-i18n]").forEach(e => { const v = d[e.dataset.i18n]; if (v != null) e.textContent = v; });
+      document.querySelectorAll("[data-i18n-ph]").forEach(e => { const v = d[e.dataset.i18nPh]; if (v != null) e.placeholder = v; });
+      document.querySelectorAll("[data-i18n-html]").forEach(e => { const v = d[e.dataset.i18nHtml]; if (v != null) e.innerHTML = v; });
+      document.querySelectorAll(".es-card").forEach(c => { const v = d[c.dataset.qk]; if (v != null) c.dataset.q = v; });
+      langBtn.textContent = LANG === "tr" ? "EN" : "TR";
+      if (typeof lastKpi !== "undefined" && lastKpi) renderKpiStrip(lastKpi);
+      if (typeof dashLoaded !== "undefined" && dashLoaded) {
+        renderDashCards();
+        const so = $("#fStore"); if (so.options[0]) so.options[0].textContent = T("f_all_stores");
+        renderTable();
+      }
+      if (typeof reportsLoaded !== "undefined" && reportsLoaded) { reportsLoaded = false; loadReports(); }
+    }
+    langBtn.onclick = () => { LANG = LANG === "tr" ? "en" : "tr"; localStorage.setItem("lang", LANG); applyI18n(); };
 
     // ---- Theme ----
     const themeBtn = $("#theme");
@@ -393,42 +513,45 @@
     });
 
     // ---- Dashboard ----
-    const fmt = n => Number(n).toLocaleString("tr-TR");
-    let INV = [];
+    const fmt = n => Number(n).toLocaleString(LANG === "tr" ? "tr-TR" : "en-US");
+    let INV = [], dashKpi = null;
+    function renderDashCards() {
+      const k = dashKpi; if (!k) return;
+      $("#kpis").innerHTML = [
+        [T("d_skus"), fmt(k.total_skus), T("d_skus_s"), ""],
+        [T("d_acc"), "R² " + k.model_r2, T("d_acc_s"), "good"],
+        [T("d_cut"), pct(k.inventory_reduction_pct), T("d_cut_s"), "good"],
+        [T("d_svc"), pct(k.avg_service_level_pct), T("d_svc_s"), ""],
+        [T("d_reorder"), fmt(k.reorder_alerts), T("d_reorder_s"), k.reorder_alerts ? "warn" : "good"],
+        [T("d_a"), fmt(k.class_a_skus), T("d_a_s"), ""],
+      ].map(([l, v, s, c]) => `<div class="kpi"><div class="label">${l}</div>
+        <div class="value ${c}">${v}</div><div class="sub">${s}</div></div>`).join("");
+
+      const at = k.alert_counts, tot = at.CRITICAL + at.REORDER + at.OK || 1;
+      const acolor = { CRITICAL: "var(--crit)", REORDER: "var(--warn)", OK: "var(--ok)" };
+      $("#alertBars").innerHTML = ["CRITICAL", "REORDER", "OK"].map(s =>
+        `<div class="barrow"><span>${s}</span><div class="track">
+         <div class="fill" style="width:${at[s]/tot*100}%;background:${acolor[s]}"></div></div>
+         <span style="text-align:right">${at[s]}</span></div>`).join("");
+
+      const ab = k.abc, atot = ab.A + ab.B + ab.C || 1;
+      const bcolor = { A: "var(--a)", B: "var(--b)", C: "var(--c)" };
+      $("#abcBars").innerHTML = ["A", "B", "C"].map(c =>
+        `<div class="barrow"><span>${T("class_prefix")} ${c}</span><div class="track">
+         <div class="fill" style="width:${ab[c]/atot*100}%;background:${bcolor[c]}"></div></div>
+         <span style="text-align:right">${ab[c]}</span></div>`).join("");
+    }
     async function loadDashboard() {
       dashLoaded = true;
       try {
-        const k = await (await fetch(API + "/api/kpis")).json();
-        $("#kpis").innerHTML = [
-          ["Toplam SKU", fmt(k.total_skus), "ürün serisi", ""],
-          ["Model doğruluğu", "R² " + k.model_r2, "held-out test", "good"],
-          ["Stok azaltımı", "%" + k.inventory_reduction_pct, "model vs naive", "good"],
-          ["Servis seviyesi", "%" + k.avg_service_level_pct, "ortalama", ""],
-          ["Reorder uyarısı", fmt(k.reorder_alerts), "SKU sipariş bekliyor", k.reorder_alerts ? "warn" : "good"],
-          ["A-sınıfı SKU", fmt(k.class_a_skus), "cironun ~%80'i", ""],
-        ].map(([l, v, s, c]) => `<div class="kpi"><div class="label">${l}</div>
-          <div class="value ${c}">${v}</div><div class="sub">${s}</div></div>`).join("");
-
-        const at = k.alert_counts, tot = at.CRITICAL + at.REORDER + at.OK || 1;
-        const acolor = { CRITICAL: "var(--crit)", REORDER: "var(--warn)", OK: "var(--ok)" };
-        $("#alertBars").innerHTML = ["CRITICAL", "REORDER", "OK"].map(s =>
-          `<div class="barrow"><span>${s}</span><div class="track">
-           <div class="fill" style="width:${at[s]/tot*100}%;background:${acolor[s]}"></div></div>
-           <span style="text-align:right">${at[s]}</span></div>`).join("");
-
-        const ab = k.abc, atot = ab.A + ab.B + ab.C || 1;
-        const bcolor = { A: "var(--a)", B: "var(--b)", C: "var(--c)" };
-        $("#abcBars").innerHTML = ["A", "B", "C"].map(c =>
-          `<div class="barrow"><span>Sınıf ${c}</span><div class="track">
-           <div class="fill" style="width:${ab[c]/atot*100}%;background:${bcolor[c]}"></div></div>
-           <span style="text-align:right">${ab[c]}</span></div>`).join("");
-
+        dashKpi = await (await fetch(API + "/api/kpis")).json();
+        renderDashCards();
         INV = (await (await fetch(API + "/api/inventory")).json()).rows;
         const stores = [...new Set(INV.map(r => r["Store ID"]))].sort();
-        $("#fStore").innerHTML = '<option value="">Tüm mağazalar</option>' +
+        $("#fStore").innerHTML = `<option value="">${T("f_all_stores")}</option>` +
           stores.map(s => `<option>${s}</option>`).join("");
         renderTable();
-      } catch (e) { $("#kpis").innerHTML = `<div class="muted">Veri yüklenemedi: ${e.message}</div>`; }
+      } catch (e) { $("#kpis").innerHTML = `<div class="muted">${e.message}</div>`; }
     }
 
     let sortKey = "annual_revenue", sortDir = -1;
@@ -446,7 +569,7 @@
         <td class="num">${fmt(r.EOQ)}</td><td class="num">${fmt(r.reorder_point)}</td>
         <td class="num">${fmt(r.current_inventory)}</td><td class="num">${r.days_of_cover}</td>
         <td><span class="pill ${r.alert_status}">${r.alert_status}</span></td></tr>`).join("");
-      $("#tableCount").textContent = `${rows.length} / ${INV.length} ürün gösteriliyor`;
+      $("#tableCount").textContent = `${rows.length} / ${INV.length} ${T("tbl_count")}`;
     }
     ["fSearch", "fStore", "fAbc", "fStatus"].forEach(id => {
       $("#" + id).addEventListener("input", renderTable);
@@ -459,7 +582,7 @@
 
     // ---- Reports ----
     function tableHTML(rows) {
-      if (!rows.length) return "<tbody><tr><td class='muted' style='padding:14px'>Veri yok</td></tr></tbody>";
+      if (!rows.length) return `<tbody><tr><td class='muted' style='padding:14px'>${T("no_data")}</td></tr></tbody>`;
       const cols = Object.keys(rows[0]);
       const numCol = c => typeof rows[0][c] === "number";
       const head = "<thead><tr>" + cols.map(c => `<th class="${numCol(c) ? "num" : ""}">${c}</th>`).join("") + "</tr></thead>";
@@ -480,7 +603,7 @@
         const adv = await (await fetch(API + "/api/advanced")).json();
         // ABC-XYZ matrix grid
         const maxV = Math.max(1, ...adv.matrix.flatMap(r => [r.X, r.Y, r.Z]));
-        const labels = { X: "stabil", Y: "değişken", Z: "erratik" };
+        const labels = { X: T("mx_x"), Y: T("mx_y"), Z: T("mx_z") };
         let cells = `<div class="h"></div>` + ["X", "Y", "Z"].map(c => `<div class="h">${c}<br><small>${labels[c]}</small></div>`).join("");
         adv.matrix.forEach(r => {
           cells += `<div class="h">${r.ABC}</div>`;
@@ -492,7 +615,7 @@
         $("#matrix").innerHTML = cells;
         $("#tAnom").innerHTML = adv.anomalies.length
           ? tableHTML(adv.anomalies)
-          : "<tbody><tr><td class='muted' style='padding:14px'>Anomali tespit edilmedi</td></tr></tbody>";
+          : `<tbody><tr><td class='muted' style='padding:14px'>${T("no_anom")}</td></tr></tbody>`;
       } catch (e) { $("#tModel").innerHTML = `<tbody><tr><td class="muted">Yüklenemedi: ${e.message}</td></tr></tbody>`; }
     }
 
@@ -537,18 +660,22 @@
     }
 
     const TOOL_LABELS = {
-      bilgi_ara: "Bilgi Araması", get_demand_forecast: "Talep Tahmini",
-      get_stock_recommendation: "Stok Önerisi", get_inventory_policy: "Envanter Politikası",
-      get_advanced_policy: "İleri Politika", list_stockout_alerts: "Stok Uyarıları",
-      list_top_stockout_risks: "Riskli Ürünler", list_anomalies: "Anomaliler",
-      abc_summary: "ABC Analizi", inventory_summary: "Envanter Özeti",
-      yonetici_ozeti: "Yönetici Özeti", list_series: "Ürün Listesi",
-      whatif_simulasyon: "Ne-olur Simülasyonu",
+      tr: { bilgi_ara: "Bilgi Araması", get_demand_forecast: "Talep Tahmini", get_stock_recommendation: "Stok Önerisi",
+        get_inventory_policy: "Envanter Politikası", get_advanced_policy: "İleri Politika", list_stockout_alerts: "Stok Uyarıları",
+        list_top_stockout_risks: "Riskli Ürünler", list_anomalies: "Anomaliler", abc_summary: "ABC Analizi",
+        inventory_summary: "Envanter Özeti", yonetici_ozeti: "Yönetici Özeti", list_series: "Ürün Listesi",
+        whatif_simulasyon: "Ne-olur Simülasyonu" },
+      en: { bilgi_ara: "Knowledge search", get_demand_forecast: "Demand forecast", get_stock_recommendation: "Stock recommendation",
+        get_inventory_policy: "Inventory policy", get_advanced_policy: "Advanced policy", list_stockout_alerts: "Stock alerts",
+        list_top_stockout_risks: "Risky products", list_anomalies: "Anomalies", abc_summary: "ABC analysis",
+        inventory_summary: "Inventory summary", yonetici_ozeti: "Executive summary", list_series: "Product list",
+        whatif_simulasyon: "What-if simulation" },
     };
     function badges(tools) {
       if (!tools || !tools.length) return "";
+      const m = TOOL_LABELS[LANG] || TOOL_LABELS.tr;
       return `<div class="tools">${[...new Set(tools)].map(t =>
-        `<span class="tool-badge">🔧 ${TOOL_LABELS[t] || t}</span>`).join("")}</div>`;
+        `<span class="tool-badge">🔧 ${m[t] || t}</span>`).join("")}</div>`;
     }
     // Inline SVG mini line chart (e.g. demand trend).
     function miniChart(chart) {
@@ -572,7 +699,7 @@
         : L.map(l => `<span>${esc(l)}</span>`).join("");
       return `<div class="minichart"><div class="ct">${esc(chart.title || "")}</div>` +
         `<div class="mc-plot"><div class="mc-y"><span>${Math.round(mx)}</span>` +
-          `<span class="u">adet</span><span>${Math.round(mn)}</span></div>` +
+          `<span class="u">${esc(T("unit_adet"))}</span><span>${Math.round(mn)}</span></div>` +
           `<svg viewBox="0 0 ${W} ${H}" width="100%" height="84" preserveAspectRatio="none">${paths}</svg></div>` +
         `<div class="mc-x">${xax}</div><div class="lg">${lg}</div></div>`;
     }
@@ -589,13 +716,13 @@
       ? srcs.map(s => `<span class="src-badge">📄 ${esc(s.label)}</span>`).join("") : "";
     function footer(srcs) {
       return `<div class="answer-foot">${sourcesHTML(srcs)}` +
-        `<button class="copy-btn" title="Kopyala">📋 Kopyala</button></div>`;
+        `<button class="copy-btn">${T("copy")}</button></div>`;
     }
     function renderFollowups(list) {
       chat.querySelectorAll(".followups").forEach(e => e.remove());
       if (!list || !list.length) return;
       const d = document.createElement("div"); d.className = "followups";
-      d.innerHTML = `<span class="fu-label">Bunu da sorabilirsin:</span>` +
+      d.innerHTML = `<span class="fu-label">${esc(T("fu_label"))}</span>` +
         list.map(q => `<button class="fu">${esc(q)}</button>`).join("");
       d.querySelectorAll(".fu").forEach(btn => btn.onclick = () => { input.value = btn.textContent; submit(); });
       chat.appendChild(d); scrollDown();
@@ -611,7 +738,7 @@
       try {
         const res = await fetch(API + "/chat/stream", { method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message, history: history.slice(0, -1) }) });
+          body: JSON.stringify({ message, history: history.slice(0, -1), lang: LANG }) });
         if (!res.ok || !res.body) throw new Error("stream");
         const reader = res.body.getReader(), dec = new TextDecoder();
         let buf = "", started = false;
@@ -631,17 +758,17 @@
             else if (ev.error) { answer = answer || ev.error; }
           }
         }
-        answer = answer || "(boş yanıt)";
+        answer = answer || T("empty");
         b.innerHTML = mdToHtml(answer) + miniChart(meta && meta.chart) +
           footer(meta && meta.sources) + badges(meta && meta.tools_used);
         const cb = b.querySelector(".copy-btn");
         if (cb) cb.onclick = () => navigator.clipboard.writeText(answer).then(() => {
-          cb.textContent = "✓ Kopyalandı"; setTimeout(() => cb.textContent = "📋 Kopyala", 1500);
+          cb.textContent = T("copied"); setTimeout(() => cb.textContent = T("copy"), 1500);
         });
-        if (meta) renderFollowups(meta.followups);
+        renderFollowups(followupsFor(meta && meta.tools_used));
         history.push({ role: "assistant", content: answer });
       } catch (e) {
-        b.innerHTML = mdToHtml("⚠️ Bir aksaklık oldu, lütfen birkaç saniye sonra tekrar dene.");
+        b.innerHTML = mdToHtml(T("err"));
       }
       finally { send.disabled = false; scrollDown(); }
     }
@@ -651,33 +778,39 @@
     input.addEventListener("input", () => { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 120) + "px"; });
     document.querySelectorAll(".es-card").forEach(c => c.onclick = () => { input.value = c.dataset.q; submit(); });
 
-    // Top KPI strip
-    const trNum = v => String(v).replace(".", ",");
+    // Top KPI strip + automatic critical-stock banner
+    let lastKpi = null;
+    function renderKpiStrip(k) {
+      $("#kpiStrip").innerHTML = [
+        [`${pct(k.inventory_reduction_pct)} ↓`, T("kpi_reduction")],
+        [`${pct(k.avg_service_level_pct)}`, T("kpi_service")],
+        [fmt(76000), T("kpi_records")],
+      ].map(([v, l]) => `<div class="k"><b>${v}</b><span>${l}</span></div>`).join("");
+      renderCritBanner(k);
+    }
+    function renderCritBanner(k) {
+      const bn = $("#critBanner");
+      if (k.critical_alerts > 0) {
+        bn.innerHTML = `⚠️ <b>${k.critical_alerts}</b> ${esc(T("crit_a"))}` +
+          `<span class="b-act"><button id="critView">${esc(T("crit_view"))}</button>` +
+          `<button id="critX">${esc(T("crit_close"))}</button></span>`;
+        bn.style.display = "flex";
+        $("#critView").onclick = () => { input.value = T("crit_q"); submit(); };
+        $("#critX").onclick = () => (bn.style.display = "none");
+      } else bn.style.display = "none";
+    }
     (async () => {
-      try {
-        const k = await (await fetch(API + "/api/kpis")).json();
-        $("#kpiStrip").innerHTML = [
-          [`%${trNum(k.inventory_reduction_pct)} ↓`, "Stok azaltımı"],
-          [`%${trNum(k.avg_service_level_pct)}`, "Hizmet seviyesi"],
-          ["76.000", "veri kaydı"],
-        ].map(([v, l]) => `<div class="k"><b>${v}</b><span>${l}</span></div>`).join("");
-
-        // Automatic critical-stock alert banner.
-        if (k.critical_alerts > 0) {
-          const bn = $("#critBanner");
-          bn.innerHTML = `⚠️ <b>${k.critical_alerts}</b> ürün kritik stokta — stok-out riski var.` +
-            `<span class="b-act"><button id="critView">Detayı gör</button><button id="critX">Kapat</button></span>`;
-          bn.style.display = "flex";
-          $("#critView").onclick = () => { input.value = "Kritik stoktaki ürünleri listele"; submit(); };
-          $("#critX").onclick = () => (bn.style.display = "none");
-        }
-      } catch { $("#kpiStrip").style.display = "none"; }
+      try { lastKpi = await (await fetch(API + "/api/kpis")).json(); renderKpiStrip(lastKpi); }
+      catch { $("#kpiStrip").style.display = "none"; }
     })();
 
     // Keep the chat column height correct under the header (handles wrapping).
     const fitChat = () => document.documentElement.style.setProperty(
       "--header-h", document.querySelector("header").offsetHeight + "px");
     addEventListener("resize", fitChat); fitChat();
+
+    // Apply the saved language on load.
+    applyI18n();
   </script>
 </body>
 </html>
