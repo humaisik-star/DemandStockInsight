@@ -149,6 +149,23 @@ service level, because it only needs to buffer the model's small forecast error
 are in [`results/stock_recommendations.csv`](results/stock_recommendations.csv);
 see `results/09_stock_optimization.png`.
 
+### 🏷️ Inventory analytics — ABC, EOQ, reorder point, alerts
+
+`inventory_analytics.py` adds the classic planning toolkit on top of the forecast:
+
+- **ABC analysis** — Pareto-rank SKUs by annual revenue: **A = 59 SKUs (79.8% of
+  revenue)**, B = 24 (15.1%), C = 17 (5.1%). Focus attention where the money is.
+- **EOQ** — Economic Order Quantity `√(2·D·S/H)`: how much to order per cycle.
+- **Reorder point** — `demand over lead time + safety stock`: when to order.
+- **Stockout alerts** — compare current on-hand stock to the reorder point and
+  flag **CRITICAL / REORDER / OK** per SKU.
+
+Outputs: [`results/inventory_analytics.csv`](results/inventory_analytics.csv),
+[`results/stockout_alerts.csv`](results/stockout_alerts.csv),
+`results/14_abc_pareto.png`, `results/15_stockout_alerts.png`. These also power
+three new assistant tools (`abc_summary`, `get_inventory_policy`,
+`list_stockout_alerts`).
+
 ---
 
 ## 🤖 LLM Assistant (Azure OpenAI)
@@ -198,6 +215,7 @@ questions. The tools are LLM-agnostic and fully testable offline
 ├── train_model.py     # Full training pipeline (Optuna + model comparison)
 ├── predict.py         # Inference on new data
 ├── stock.py           # Inventory optimization from forecasts
+├── inventory_analytics.py # ABC analysis, EOQ, reorder point, stockout alerts
 ├── backtest.py        # Rolling-origin time-series cross-validation
 ├── quantile_forecast.py # Probabilistic forecast (P10/P50/P90 intervals)
 ├── explain.py         # SHAP explainability (global + local)

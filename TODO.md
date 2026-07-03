@@ -87,3 +87,9 @@ Projenin mevcut durumu ve sıradaki adımlar. Tamamladıkça `[ ]` → `[x]` yap
 - Yerel çalıştırma sırası: `train_model.py` → `predict.py` → `stock.py` → `assistant.py`
 - Testler: `python -m pytest`
 - Azure'a geçiş kodu bozmaz; `src/features.py` paylaşımlı olduğu için her yerde aynı feature'lar üretilir.
+
+## Envanter analitigi (ABC/EOQ/uyarilar) - TAMAM
+- [x] ABC analizi (Pareto, A/B/C siniflari)
+- [x] EOQ + reorder point
+- [x] Stok tukenme uyarilari (CRITICAL/REORDER/OK)
+- [x] Chatbot tool: abc_summary, get_inventory_policy, list_stockout_alerts

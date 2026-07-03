@@ -14,9 +14,11 @@ import pandas as pd
 DATA_DIR = Path(os.getenv("DATA_DIR", Path(__file__).parent / "data"))
 PRED_PATH = DATA_DIR / "predictions.csv"
 STOCK_PATH = DATA_DIR / "stock_recommendations.csv"
+INV_PATH = DATA_DIR / "inventory_analytics.csv"
 
 _pred_cache = None
 _stock_cache = None
+_inv_cache = None
 
 
 def _predictions() -> pd.DataFrame:
@@ -31,6 +33,13 @@ def _stock() -> pd.DataFrame:
     if _stock_cache is None:
         _stock_cache = pd.read_csv(STOCK_PATH)
     return _stock_cache
+
+
+def _inventory() -> pd.DataFrame:
+    global _inv_cache
+    if _inv_cache is None:
+        _inv_cache = pd.read_csv(INV_PATH)
+    return _inv_cache
 
 
 def list_series() -> dict:
@@ -95,12 +104,61 @@ def inventory_summary() -> dict:
     }
 
 
+def abc_summary() -> dict:
+    inv = _inventory()
+    total = inv["annual_revenue"].sum()
+    out = []
+    for cls in ["A", "B", "C"]:
+        sub = inv[inv["abc_class"] == cls]
+        out.append({
+            "class": cls,
+            "sku_count": int(len(sub)),
+            "revenue_share_pct": round(float(sub["annual_revenue"].sum() / total * 100), 1),
+        })
+    return {"abc_breakdown": out}
+
+
+def get_inventory_policy(store_id: str, product_id: str) -> dict:
+    inv = _inventory()
+    m = inv[(inv["Store ID"] == store_id) & (inv["Product ID"] == product_id)]
+    if m.empty:
+        return {"error": f"No inventory policy for {store_id}/{product_id}."}
+    r = m.iloc[0]
+    return {
+        "store_id": store_id,
+        "product_id": product_id,
+        "abc_class": r["abc_class"],
+        "economic_order_quantity": float(r["EOQ"]),
+        "reorder_point": float(r["reorder_point"]),
+        "safety_stock": float(r["safety_stock_model"]),
+        "current_inventory": float(r["current_inventory"]),
+        "days_of_cover": float(r["days_of_cover"]),
+        "alert_status": r["alert_status"],
+    }
+
+
+def list_stockout_alerts(status: str = None, top_n: int = 10) -> dict:
+    inv = _inventory()
+    alerts = inv[inv["alert_status"] != "OK"]
+    if status:
+        alerts = alerts[alerts["alert_status"] == status.upper()]
+    alerts = alerts.sort_values("annual_revenue", ascending=False).head(top_n)
+    view = alerts[
+        ["Store ID", "Product ID", "alert_status", "abc_class",
+         "current_inventory", "reorder_point", "EOQ"]
+    ].rename(columns={"EOQ": "economic_order_quantity"})
+    return {"count": int(len(alerts)), "alerts": view.to_dict("records")}
+
+
 _FUNCS = {
     "list_series": list_series,
     "get_demand_forecast": get_demand_forecast,
     "get_stock_recommendation": get_stock_recommendation,
     "list_top_stockout_risks": list_top_stockout_risks,
     "inventory_summary": inventory_summary,
+    "abc_summary": abc_summary,
+    "get_inventory_policy": get_inventory_policy,
+    "list_stockout_alerts": list_stockout_alerts,
 }
 
 TOOL_SPECS = [
@@ -125,6 +183,19 @@ TOOL_SPECS = [
     {"type": "function", "function": {"name": "inventory_summary",
         "description": "Portfolio-wide inventory: naive vs model policy and total savings.",
         "parameters": {"type": "object", "properties": {}}}},
+    {"type": "function", "function": {"name": "abc_summary",
+        "description": "ABC analysis: SKU count and revenue share for classes A, B, C.",
+        "parameters": {"type": "object", "properties": {}}}},
+    {"type": "function", "function": {"name": "get_inventory_policy",
+        "description": "EOQ (order quantity), reorder point, ABC class, current stock and alert for a store-product.",
+        "parameters": {"type": "object", "properties": {
+            "store_id": {"type": "string"}, "product_id": {"type": "string"}},
+            "required": ["store_id", "product_id"]}}},
+    {"type": "function", "function": {"name": "list_stockout_alerts",
+        "description": "SKUs needing action (most valuable first). Optionally filter by status CRITICAL or REORDER.",
+        "parameters": {"type": "object", "properties": {
+            "status": {"type": "string", "enum": ["CRITICAL", "REORDER"]},
+            "top_n": {"type": "integer", "default": 10}}}}},
 ]
 
 
