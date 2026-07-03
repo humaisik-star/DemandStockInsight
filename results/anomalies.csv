@@ -1,0 +1,3 @@
+Store ID,Product ID,anomaly_type,detail,severity
+S001,P0019,Talep sıçraması,Son 7 gün ortalaması geneli %45 aştı,yüksek
+S002,P0006,Talep sıçraması,Son 7 gün ortalaması geneli %40 aştı,yüksek

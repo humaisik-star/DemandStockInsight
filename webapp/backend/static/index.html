@@ -139,6 +139,12 @@
     .flow .arrow { color: var(--muted); }
     a { color: var(--accent); }
     .muted { color: var(--muted); font-size: 13px; }
+    /* ABC-XYZ matrix */
+    .matrix { display: grid; grid-template-columns: 46px repeat(3, 1fr); gap: 6px; max-width: 460px; }
+    .matrix .h { color: var(--muted); font-size: 12px; font-weight: 600; display: grid; place-items: center; }
+    .matrix .cell { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      padding: 14px 0; text-align: center; font-weight: 700; font-size: 18px; }
+    .matrix .cell small { display: block; font-weight: 500; font-size: 10px; color: var(--muted); margin-top: 2px; }
     @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } .kpi .value { font-size: 23px; } }
   </style>
 </head>
@@ -162,10 +168,10 @@
     <section class="panel active" id="chat-panel">
       <div id="chat"></div>
       <div class="chips" id="chips">
-        <div class="chip">Stok özetini ver</div>
+        <div class="chip">📋 Yönetici özeti ver</div>
         <div class="chip">ABC analizini özetle</div>
-        <div class="chip">Reorder gereken en değerli 3 ürün</div>
-        <div class="chip">S003 P0011 için EOQ ve reorder point</div>
+        <div class="chip">Anomalileri açıkla</div>
+        <div class="chip">S003 P0011 için newsvendor sipariş miktarı</div>
       </div>
       <div class="inputrow">
         <textarea id="input" rows="1" placeholder="Talep, stok, ABC, EOQ hakkında sor..."></textarea>
@@ -208,6 +214,10 @@
       <div class="tablewrap"><table id="tBack"></table></div>
       <h2 class="section">Olasılıksal tahmin (quantile pinball loss)</h2>
       <div class="tablewrap"><table id="tQuant"></table></div>
+      <h2 class="section">ABC-XYZ segmentasyonu (değer × talep değişkenliği)</h2>
+      <div id="matrix" class="matrix"></div>
+      <h2 class="section">Tespit edilen anomaliler</h2>
+      <div class="tablewrap"><table id="tAnom"></table></div>
     </section>
 
     <!-- ABOUT -->
@@ -349,6 +359,23 @@
         $("#tModel").innerHTML = tableHTML(m.model);
         $("#tBack").innerHTML = tableHTML(m.backtest);
         $("#tQuant").innerHTML = tableHTML(m.quantile);
+
+        const adv = await (await fetch(API + "/api/advanced")).json();
+        // ABC-XYZ matrix grid
+        const maxV = Math.max(1, ...adv.matrix.flatMap(r => [r.X, r.Y, r.Z]));
+        const labels = { X: "stabil", Y: "değişken", Z: "erratik" };
+        let cells = `<div class="h"></div>` + ["X", "Y", "Z"].map(c => `<div class="h">${c}<br><small>${labels[c]}</small></div>`).join("");
+        adv.matrix.forEach(r => {
+          cells += `<div class="h">${r.ABC}</div>`;
+          ["X", "Y", "Z"].forEach(c => {
+            const v = r[c], bg = `color-mix(in srgb, var(--accent) ${Math.round(v / maxV * 70)}%, transparent)`;
+            cells += `<div class="cell" style="background:${bg}">${v}<small>${r.ABC}${c}</small></div>`;
+          });
+        });
+        $("#matrix").innerHTML = cells;
+        $("#tAnom").innerHTML = adv.anomalies.length
+          ? tableHTML(adv.anomalies)
+          : "<tbody><tr><td class='muted' style='padding:14px'>Anomali tespit edilmedi</td></tr></tbody>";
       } catch (e) { $("#tModel").innerHTML = `<tbody><tr><td class="muted">Yüklenemedi: ${e.message}</td></tr></tbody>`; }
     }
 

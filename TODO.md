@@ -93,3 +93,12 @@ Projenin mevcut durumu ve sıradaki adımlar. Tamamladıkça `[ ]` → `[x]` yap
 - [x] EOQ + reorder point
 - [x] Stok tukenme uyarilari (CRITICAL/REORDER/OK)
 - [x] Chatbot tool: abc_summary, get_inventory_policy, list_stockout_alerts
+
+## Ileri seviye (ABC-XYZ / Newsvendor / Yonetici Ozeti) - TAMAM
+- [x] ABC-XYZ matrisi (deger x talep degiskenligi)
+- [x] Newsvendor optimal siparis (critical ratio)
+- [x] Z-skorlu guvenlik stogu
+- [x] Stok devir hizi + gun cinsinden stok
+- [x] Anomali tespiti + aciklama
+- [x] Otomatik Yonetici Ozeti (Azure OpenAI) - executive_summary.py + yonetici_ozeti tool
+- [x] Raporlar sekmesinde ABC-XYZ matrisi + anomaliler

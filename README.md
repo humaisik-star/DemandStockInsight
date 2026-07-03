@@ -166,6 +166,32 @@ Outputs: [`results/inventory_analytics.csv`](results/inventory_analytics.csv),
 three new assistant tools (`abc_summary`, `get_inventory_policy`,
 `list_stockout_alerts`).
 
+### 🧮 Advanced inventory science
+
+`advanced_analytics.py` adds a second layer:
+
+- **ABC-XYZ matrix** — cross value (ABC) with demand variability (XYZ, by
+  coefficient of variation) into a 9-cell segmentation (e.g. **AX** = high value,
+  stable → automate; **CZ** = low value, erratic → minimise).
+- **Newsvendor** — single-period optimal order from the critical ratio
+  `Cu/(Cu+Co)`, read off the demand distribution.
+- **Z-score safety stock** — `SS = z·σ·√(lead time)` for a target service level.
+- **Turnover & days of stock** — how fast inventory cycles.
+- **Anomaly detection** — flags demand spikes/drops and critical/excess stock
+  with plain-language reasons.
+
+Outputs: `results/advanced_analytics.csv`, `results/abc_xyz_matrix.csv`,
+`results/anomalies.csv`, `results/16_abc_xyz_matrix.png`,
+`results/17_turnover.png`. New tools: `get_advanced_policy`, `list_anomalies`.
+
+### 📝 Automatic executive summary
+
+`executive_summary.py` feeds the analytics snapshot to **Azure OpenAI**, which
+writes a decision-focused Turkish management brief (headline KPIs, priority
+actions, product-level commentary, anomaly explanations) to
+`results/executive_summary.md`. The same is available live in the chatbot via the
+`yonetici_ozeti` tool ("yönetici özeti ver").
+
 ---
 
 ## 🤖 LLM Assistant (Azure OpenAI)
@@ -216,6 +242,8 @@ questions. The tools are LLM-agnostic and fully testable offline
 ├── predict.py         # Inference on new data
 ├── stock.py           # Inventory optimization from forecasts
 ├── inventory_analytics.py # ABC analysis, EOQ, reorder point, stockout alerts
+├── advanced_analytics.py  # ABC-XYZ, newsvendor, z-score SS, turnover, anomalies
+├── executive_summary.py   # Azure OpenAI auto executive summary (Turkish)
 ├── backtest.py        # Rolling-origin time-series cross-validation
 ├── quantile_forecast.py # Probabilistic forecast (P10/P50/P90 intervals)
 ├── explain.py         # SHAP explainability (global + local)

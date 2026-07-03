@@ -20,10 +20,14 @@ import pandas as pd
 PRED_PATH = Path("results/predictions.csv")
 STOCK_PATH = Path("results/stock_recommendations.csv")
 INV_PATH = Path("results/inventory_analytics.csv")
+ADV_PATH = Path("results/advanced_analytics.csv")
+ANOM_PATH = Path("results/anomalies.csv")
 
 _pred_cache = None
 _stock_cache = None
 _inv_cache = None
+_adv_cache = None
+_anom_cache = None
 
 
 def _predictions() -> pd.DataFrame:
@@ -51,6 +55,22 @@ def _inventory() -> pd.DataFrame:
             raise FileNotFoundError(f"{INV_PATH} missing. Run inventory_analytics.py first.")
         _inv_cache = pd.read_csv(INV_PATH)
     return _inv_cache
+
+
+def _advanced() -> pd.DataFrame:
+    global _adv_cache
+    if _adv_cache is None:
+        if not ADV_PATH.exists():
+            raise FileNotFoundError(f"{ADV_PATH} missing. Run advanced_analytics.py first.")
+        _adv_cache = pd.read_csv(ADV_PATH)
+    return _adv_cache
+
+
+def _anomalies() -> pd.DataFrame:
+    global _anom_cache
+    if _anom_cache is None:
+        _anom_cache = pd.read_csv(ANOM_PATH) if ANOM_PATH.exists() else pd.DataFrame()
+    return _anom_cache
 
 
 # --------------------------------------------------------------------------- #
@@ -175,6 +195,66 @@ def list_stockout_alerts(status: str = None, top_n: int = 10) -> dict:
     return {"count": int(len(alerts)), "alerts": view.to_dict("records")}
 
 
+def get_advanced_policy(store_id: str, product_id: str) -> dict:
+    """ABC-XYZ class, newsvendor order qty, z-score safety stock, turnover for a SKU."""
+    adv = _advanced()
+    m = adv[(adv["Store ID"] == store_id) & (adv["Product ID"] == product_id)]
+    if m.empty:
+        return {"error": f"No advanced policy for {store_id}/{product_id}."}
+    r = m.iloc[0]
+    return {
+        "store_id": store_id,
+        "product_id": product_id,
+        "abc_xyz": r["abc_xyz"],
+        "demand_cv": float(r["cv"]),
+        "newsvendor_order_qty": float(r["newsvendor_qty"]),
+        "safety_stock_zscore": float(r["safety_stock_zscore"]),
+        "critical_ratio": float(r["critical_ratio"]),
+        "turnover_per_year": float(r["turnover"]),
+        "days_of_stock": float(r["days_of_stock"]),
+    }
+
+
+def list_anomalies(top_n: int = 10) -> dict:
+    """Detected demand/stock anomalies with a plain-language reason."""
+    anom = _anomalies()
+    if anom.empty:
+        return {"count": 0, "anomalies": []}
+    return {"count": int(len(anom)), "anomalies": anom.head(top_n).to_dict("records")}
+
+
+def yonetici_ozeti() -> dict:
+    """Full data snapshot for an executive summary: KPIs, ABC-XYZ, alerts, anomalies.
+
+    The assistant should turn this into a decision-focused Turkish summary with
+    product-level commentary and an explanation of the anomalies.
+    """
+    inv = _inventory()
+    stock = _stock()
+    adv = _advanced()
+    naive = float(stock["avg_inventory_naive"].sum())
+    model = float(stock["avg_inventory_model"].sum())
+
+    top_alerts = (
+        inv[inv["alert_status"] != "OK"].sort_values("annual_revenue", ascending=False).head(5)
+    )
+    return {
+        "kpis": {
+            "total_skus": int(len(inv)),
+            "inventory_reduction_pct": round((naive - model) / naive * 100, 1),
+            "avg_service_level_pct": round(float(stock["service_model"].mean()) * 100, 1),
+            "reorder_alerts": int((inv["alert_status"] != "OK").sum()),
+            "avg_turnover": round(float(adv["turnover"].mean()), 1),
+        },
+        "abc_breakdown": abc_summary()["abc_breakdown"],
+        "abc_xyz_counts": adv["abc_xyz"].value_counts().to_dict(),
+        "top_value_alerts": top_alerts[
+            ["Store ID", "Product ID", "abc_class", "alert_status", "current_inventory", "reorder_point"]
+        ].to_dict("records"),
+        "anomalies": _anomalies().to_dict("records") if not _anomalies().empty else [],
+    }
+
+
 _FUNCS = {
     "list_series": list_series,
     "get_demand_forecast": get_demand_forecast,
@@ -184,6 +264,9 @@ _FUNCS = {
     "abc_summary": abc_summary,
     "get_inventory_policy": get_inventory_policy,
     "list_stockout_alerts": list_stockout_alerts,
+    "get_advanced_policy": get_advanced_policy,
+    "list_anomalies": list_anomalies,
+    "yonetici_ozeti": yonetici_ozeti,
 }
 
 TOOL_SPECS = [
@@ -280,6 +363,37 @@ TOOL_SPECS = [
                     "top_n": {"type": "integer", "default": 10},
                 },
             },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_advanced_policy",
+            "description": "ABC-XYZ segment, newsvendor order quantity, z-score safety stock, and stock turnover for a store-product.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "store_id": {"type": "string"},
+                    "product_id": {"type": "string"},
+                },
+                "required": ["store_id", "product_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_anomalies",
+            "description": "Detected demand/stock anomalies (spikes, drops, critical or excess stock) with reasons.",
+            "parameters": {"type": "object", "properties": {"top_n": {"type": "integer", "default": 10}}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "yonetici_ozeti",
+            "description": "Full snapshot (KPIs, ABC/ABC-XYZ, top alerts, anomalies) to build an executive summary. Call this when the user asks for a yönetici özeti / executive summary.",
+            "parameters": {"type": "object", "properties": {}},
         },
     },
 ]

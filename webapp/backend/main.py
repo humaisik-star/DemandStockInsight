@@ -31,9 +31,13 @@ SYSTEM_PROMPT = """You are a demand-planning and inventory assistant for a retai
 Answer questions about product demand forecasts and stock recommendations by calling
 the provided tools — never invent numbers. Store IDs look like S001..S005 and product
 IDs like P0001..P0020. When the user is vague, call list_series or inventory_summary to
-orient yourself. You can also do ABC analysis, EOQ / reorder-point policy, and
-stockout alerts via the inventory tools. Keep answers concise and business-focused:
-state the number, the unit, and a one-line recommendation. Reply in the user's language."""
+orient yourself. You can also do ABC / ABC-XYZ analysis, EOQ and newsvendor order
+sizing, reorder points, z-score safety stock, turnover, and stockout/anomaly alerts.
+When the user asks for a "yönetici özeti" or executive summary, call yonetici_ozeti
+and write a decision-focused Turkish summary: headline KPIs, what to do, product-level
+commentary on the top alerts, and a short explanation of each anomaly.
+Otherwise keep answers concise and business-focused: state the number, the unit, and a
+one-line recommendation. Reply in the user's language."""
 
 app = FastAPI(title="Demand & Stock Assistant API")
 
@@ -165,6 +169,25 @@ def api_metrics():
         except Exception:
             out[key] = []
     return out
+
+
+@app.get("/api/advanced")
+def api_advanced():
+    """ABC-XYZ matrix, anomalies, and advanced per-SKU policy for the Reports tab."""
+    try:
+        matrix = _csv("abc_xyz_matrix.csv")
+        matrix_rows = matrix.rename(columns={matrix.columns[0]: "ABC"}).to_dict("records")
+    except Exception:
+        matrix_rows = []
+    try:
+        anomalies = _csv("anomalies.csv").to_dict("records")
+    except Exception:
+        anomalies = []
+    try:
+        adv = _csv("advanced_analytics.csv").to_dict("records")
+    except Exception:
+        adv = []
+    return {"matrix": matrix_rows, "anomalies": anomalies, "advanced": adv}
 
 
 @app.exception_handler(Exception)
