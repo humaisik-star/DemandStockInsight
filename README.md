@@ -113,6 +113,23 @@ first to the last fold), confirming the model is stable over time and benefits
 from more history. Run `python backtest.py`; see `results/10_backtest.png` and
 [`results/backtest_metrics.csv`](results/backtest_metrics.csv).
 
+### 🎲 Probabilistic forecasting (prediction intervals)
+
+A point forecast hides risk. `quantile_forecast.py` trains XGBoost with the
+**quantile (pinball) objective** to output a **P10 / P50 / P90** interval —
+demand you'll exceed only ~10% of the time (P90) is exactly what sizes safety
+stock, with no Gaussian assumption. On the held-out set the P10–P90 band covers
+**72.7%** of actuals (target 80%) with a mean width of ~35 units. See
+`results/11_quantile_intervals.png`.
+
+### 🔍 Explainability (SHAP)
+
+`explain.py` uses **SHAP** to show not just *which* features matter but *how*
+each pushes a forecast. Top demand drivers: **Price** (by far), product
+**Category**, **Competitor Pricing**, **Discount**, and the recent 7-day demand
+trend — and it can explain any single prediction (e.g. "high price −32,
+Furniture +13"). See `results/12_shap_bar.png` and `results/13_shap_beeswarm.png`.
+
 ### 📦 Inventory optimization
 
 Applying the forecast to stock policy at a **95% target service level** with a
@@ -179,6 +196,8 @@ questions. The tools are LLM-agnostic and fully testable offline
 ├── predict.py         # Inference on new data
 ├── stock.py           # Inventory optimization from forecasts
 ├── backtest.py        # Rolling-origin time-series cross-validation
+├── quantile_forecast.py # Probabilistic forecast (P10/P50/P90 intervals)
+├── explain.py         # SHAP explainability (global + local)
 ├── assistant.py       # Azure OpenAI natural-language assistant
 ├── .env.example       # Azure OpenAI configuration template
 ├── TODO.md            # Roadmap (Azure ML + Azure OpenAI + enhancements)

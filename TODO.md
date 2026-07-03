@@ -74,10 +74,10 @@ Projenin mevcut durumu ve sıradaki adımlar. Tamamladıkça `[ ]` → `[x]` yap
 
 ## 🚀 Modeli Güçlendirme (isteğe bağlı ama etkili)
 
-- [ ] **Tahmin aralıkları** (quantile regression P10/P50/P90) → güvenlik stoğunu doğrudan belirsizlikten hesapla
+- [x] **Tahmin aralıkları** (quantile regression P10/P50/P90) — `quantile_forecast.py`
 - [ ] **Çok-günlük forecast** (lead time boyunca her günü ayrı tahmin et)
-- [ ] **Backtesting** (`TimeSeriesSplit` ile kayan pencere doğrulaması)
-- [ ] **SHAP** ile açıklanabilirlik ("bu ürünün talebi neden arttı?")
+- [x] **Backtesting** (`TimeSeriesSplit` ile kayan pencere doğrulaması) — `backtest.py`
+- [x] **SHAP** ile açıklanabilirlik ("bu ürünün talebi neden arttı?") — `explain.py`
 - [ ] **MLflow** ile deney takibi
 - [ ] Dashboard'a (`dashboard.html`) forecast + stok sonuçlarını ekle
 
