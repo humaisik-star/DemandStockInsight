@@ -36,9 +36,9 @@ stock, turnover, and stockout/anomaly alerts. For a "yönetici özeti" call yone
 
 For CONCEPTUAL questions (what is / why / how — ABC, ABC-XYZ, EOQ, newsvendor, safety
 stock, reorder point, quantile forecasting, turnover, methodology) call bilgi_ara and
-answer ONLY from the returned chunks, ending with a line "**Kaynak:** <dosya>". If
-bilgi_ara returns found=false or the chunks do not actually define what was asked, reply
-exactly "Bu konu bilgi tabanımda yok." — never invent or stretch unrelated chunks.
+answer ONLY from the returned chunks. Do NOT add a "Kaynak" line — the interface already
+shows the source. If bilgi_ara returns found=false or the chunks do not actually define
+what was asked, reply exactly "Bu konu bilgi tabanımda yok." — never invent or stretch.
 
 HOW TO WRITE THE ANSWER:
 - Match length to the question. A simple question gets one or two sentences. A complex
@@ -48,6 +48,8 @@ HOW TO WRITE THE ANSWER:
   answer, **bold for the key numbers**, short bullet lists for several items, and a table
   when comparing rows. Do not over-format a short answer — a one-line answer needs no
   heading or list.
+- Format numbers Turkish-style: dot as the thousands separator (**15.651**), comma for
+  decimals (**94,7**), and keep the percent sign attached (**%28,4**). Be consistent.
 Reply in the user's language (Turkish by default)."""
 
 app = FastAPI(title="Demand & Stock Assistant API")
@@ -90,6 +92,45 @@ class ChatResponse(BaseModel):
     answer: str
     tools_used: list[str] = []
     chart: dict | None = None
+    sources: list[dict] = []
+    followups: list[str] = []
+
+
+# Friendly labels for the RAG source badge.
+DOC_LABELS = {
+    "01_proje_metodoloji.md": "Metodoloji",
+    "02_abc_analizi.md": "ABC Analizi",
+    "03_eoq.md": "EOQ",
+    "04_guvenlik_stogu.md": "Güvenlik Stoğu",
+    "05_reorder_point.md": "Yeniden Sipariş Noktası",
+    "06_newsvendor.md": "Newsvendor",
+    "07_quantile_tahmin.md": "Quantile Tahmin",
+    "08_abc_xyz.md": "ABC-XYZ",
+    "09_stok_devir_ve_tahmin.md": "Stok Devir & Tahmin",
+}
+
+# Context-aware follow-up suggestions, keyed by the primary tool used.
+FOLLOWUPS = {
+    "bilgi_ara": ["Güvenlik stoğu nasıl hesaplanır?", "Newsvendor modeli nedir?", "ABC-XYZ neyi ölçer?"],
+    "get_demand_forecast": ["Bu ürün için stok önerisi ver", "En riskli ürünler hangileri?", "ABC sınıfı nedir?"],
+    "get_stock_recommendation": ["Bu ürünün EOQ değeri nedir?", "Newsvendor sipariş miktarı nedir?", "Yönetici özeti ver"],
+    "get_inventory_policy": ["Bu ürünün talep trendi nasıl?", "En riskli ürünler hangileri?", "Newsvendor nedir?"],
+    "get_advanced_policy": ["ABC-XYZ neyi ölçer?", "Newsvendor modeli nedir?", "Stok devir hızı nedir?"],
+    "list_stockout_alerts": ["Yönetici özeti ver", "ABC analizini özetle", "Anomalileri açıkla"],
+    "abc_summary": ["ABC-XYZ analizini göster", "En değerli ürünler hangileri?", "EOQ nedir?"],
+    "list_top_stockout_risks": ["Yönetici özeti ver", "Reorder gereken ürünler", "Güvenlik stoğu nedir?"],
+    "yonetici_ozeti": ["En riskli ürünleri listele", "Anomalileri açıkla", "ABC-XYZ analizini göster"],
+    "inventory_summary": ["ABC analizini özetle", "Reorder gereken ürünler", "Yönetici özeti ver"],
+}
+DEFAULT_FOLLOWUPS = ["Yönetici özeti ver", "ABC analizini özetle", "EOQ nedir?"]
+
+
+def followups_for(tools_used):
+    """2-3 suggestions based on the first recognised tool used."""
+    for t in tools_used:
+        if t in FOLLOWUPS:
+            return FOLLOWUPS[t][:3]
+    return DEFAULT_FOLLOWUPS
 
 
 def _chart_from(name, args, result):
@@ -113,6 +154,7 @@ def run_turn(messages):
     deployment = os.environ["AZURE_OPENAI_DEPLOYMENT"]
     tools_used = []
     chart = None
+    sources = []
     while True:
         resp = client().chat.completions.create(
             model=deployment, messages=messages, tools=TOOL_SPECS, tool_choice="auto"
@@ -120,7 +162,7 @@ def run_turn(messages):
         msg = resp.choices[0].message
         if not msg.tool_calls:
             messages.append({"role": "assistant", "content": msg.content})
-            return msg.content, tools_used, chart
+            return msg.content, tools_used, chart, sources
 
         messages.append({
             "role": "assistant",
@@ -136,6 +178,13 @@ def run_turn(messages):
             tools_used.append(tc.function.name)
             result = dispatch(tc.function.name, args)
             chart = _chart_from(tc.function.name, args, result) or chart
+            if tc.function.name == "bilgi_ara" and isinstance(result, dict) and result.get("found"):
+                seen = {s["file"] for s in sources}
+                for s in result.get("sources", []):
+                    if s["source"] not in seen:
+                        seen.add(s["source"])
+                        sources.append({"file": s["source"],
+                                        "label": DOC_LABELS.get(s["source"], s["source"])})
             messages.append({"role": "tool", "tool_call_id": tc.id, "content": json.dumps(result)})
 
 
@@ -239,11 +288,16 @@ def chat(req: ChatRequest):
         messages = [{"role": "system", "content": SYSTEM_PROMPT}]
         messages += [{"role": t.role, "content": t.content} for t in req.history]
         messages.append({"role": "user", "content": req.message})
-        answer, tools_used, chart = run_turn(messages)
-        return ChatResponse(answer=answer or "", tools_used=tools_used, chart=chart)
-    except Exception as e:
-        # Never surface a raw 500; hand the frontend a clean JSON message.
+        answer, tools_used, chart, sources = run_turn(messages)
+        # Only show source badges when the answer actually used the knowledge base.
+        show_sources = sources[:2] if (answer and "bilgi tabanımda yok" not in answer) else []
         return ChatResponse(
-            answer=f"İstek işlenemedi ({type(e).__name__}). Model uyanıyor olabilir, tekrar deneyin.",
+            answer=answer or "", tools_used=tools_used, chart=chart,
+            sources=show_sources, followups=followups_for(tools_used),
+        )
+    except Exception:
+        # Never surface a raw 500; hand the frontend a clean, polite JSON message.
+        return ChatResponse(
+            answer="Şu an bir aksaklık oldu, lütfen birkaç saniye sonra tekrar deneyin.",
             tools_used=[],
         )
