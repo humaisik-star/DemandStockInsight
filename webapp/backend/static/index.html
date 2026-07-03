@@ -503,9 +503,18 @@
       return html;
     }
 
+    const TOOL_LABELS = {
+      bilgi_ara: "Bilgi Araması", get_demand_forecast: "Talep Tahmini",
+      get_stock_recommendation: "Stok Önerisi", get_inventory_policy: "Envanter Politikası",
+      get_advanced_policy: "İleri Politika", list_stockout_alerts: "Stok Uyarıları",
+      list_top_stockout_risks: "Riskli Ürünler", list_anomalies: "Anomaliler",
+      abc_summary: "ABC Analizi", inventory_summary: "Envanter Özeti",
+      yonetici_ozeti: "Yönetici Özeti", list_series: "Ürün Listesi",
+    };
     function badges(tools) {
       if (!tools || !tools.length) return "";
-      return `<div class="tools">${[...new Set(tools)].map(t => `<span class="tool-badge">🔧 ${t}</span>`).join("")}</div>`;
+      return `<div class="tools">${[...new Set(tools)].map(t =>
+        `<span class="tool-badge">🔧 ${TOOL_LABELS[t] || t}</span>`).join("")}</div>`;
     }
     // Inline SVG mini line chart (e.g. demand trend).
     function miniChart(chart) {
@@ -558,19 +567,38 @@
       const b = addMsg("bot", "", true);
       b.innerHTML = `<span class="typing-dots"><i></i><i></i><i></i></span>`;
       send.disabled = true;
+      let answer = "", meta = null;
       try {
-        const res = await fetch(API + "/chat", { method: "POST",
+        const res = await fetch(API + "/chat/stream", { method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message, history: history.slice(0, -1) }) });
-        const raw = await res.text(); let data;
-        try { data = JSON.parse(raw); } catch { throw new Error("parse"); }
-        const answer = data.answer || "(boş yanıt)";
-        b.innerHTML = mdToHtml(answer) + miniChart(data.chart) + footer(data.sources) + badges(data.tools_used);
+        if (!res.ok || !res.body) throw new Error("stream");
+        const reader = res.body.getReader(), dec = new TextDecoder();
+        let buf = "", started = false;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += dec.decode(value, { stream: true });
+          let nl;
+          while ((nl = buf.indexOf("\n\n")) >= 0) {
+            const line = buf.slice(0, nl).trim(); buf = buf.slice(nl + 2);
+            if (!line.startsWith("data:")) continue;
+            let ev; try { ev = JSON.parse(line.slice(5).trim()); } catch { continue; }
+            if (ev.delta !== undefined) {
+              if (!started) { started = true; b.innerHTML = ""; }
+              answer += ev.delta; b.innerHTML = mdToHtml(answer); scrollDown();
+            } else if (ev.done) { meta = ev.done; }
+            else if (ev.error) { answer = answer || ev.error; }
+          }
+        }
+        answer = answer || "(boş yanıt)";
+        b.innerHTML = mdToHtml(answer) + miniChart(meta && meta.chart) +
+          footer(meta && meta.sources) + badges(meta && meta.tools_used);
         const cb = b.querySelector(".copy-btn");
         if (cb) cb.onclick = () => navigator.clipboard.writeText(answer).then(() => {
           cb.textContent = "✓ Kopyalandı"; setTimeout(() => cb.textContent = "📋 Kopyala", 1500);
         });
-        renderFollowups(data.followups);
+        if (meta) renderFollowups(meta.followups);
         history.push({ role: "assistant", content: answer });
       } catch (e) {
         b.innerHTML = mdToHtml("⚠️ Bir aksaklık oldu, lütfen birkaç saniye sonra tekrar dene.");

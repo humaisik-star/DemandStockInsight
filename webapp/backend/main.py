@@ -14,7 +14,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
 import pandas as pd
@@ -50,7 +50,11 @@ HOW TO WRITE THE ANSWER:
   heading or list.
 - Format numbers Turkish-style: dot as the thousands separator (**15.651**), comma for
   decimals (**94,7**), and keep the percent sign attached (**%28,4**). Be consistent.
+- Be efficient: answer greetings and simple clarifications directly without any tool.
+  Call only the tools you actually need and never repeat a tool call you already made.
 Reply in the user's language (Turkish by default)."""
+
+MAX_TOKENS = 1400  # cap answer length to keep responses fast and focused
 
 app = FastAPI(title="Demand & Stock Assistant API")
 
@@ -157,7 +161,8 @@ def run_turn(messages):
     sources = []
     while True:
         resp = client().chat.completions.create(
-            model=deployment, messages=messages, tools=TOOL_SPECS, tool_choice="auto"
+            model=deployment, messages=messages, tools=TOOL_SPECS, tool_choice="auto",
+            max_completion_tokens=MAX_TOKENS,
         )
         msg = resp.choices[0].message
         if not msg.tool_calls:
@@ -301,3 +306,82 @@ def chat(req: ChatRequest):
             answer="Şu an bir aksaklık oldu, lütfen birkaç saniye sonra tekrar deneyin.",
             tools_used=[],
         )
+
+
+def _capture_sources(name, result, sources):
+    if name == "bilgi_ara" and isinstance(result, dict) and result.get("found"):
+        seen = {s["file"] for s in sources}
+        for s in result.get("sources", []):
+            if s["source"] not in seen:
+                seen.add(s["source"])
+                sources.append({"file": s["source"], "label": DOC_LABELS.get(s["source"], s["source"])})
+
+
+def stream_turn(messages):
+    """Yield ('delta', text) for answer tokens and ('meta', {...}) at the end.
+
+    Tool rounds are consumed silently (accumulate tool-call deltas, then execute);
+    only the final assistant text is streamed token by token to the client.
+    """
+    deployment = os.environ["AZURE_OPENAI_DEPLOYMENT"]
+    tools_used, sources, chart = [], [], None
+    while True:
+        stream = client().chat.completions.create(
+            model=deployment, messages=messages, tools=TOOL_SPECS, tool_choice="auto",
+            max_completion_tokens=MAX_TOKENS, stream=True,
+        )
+        content, calls = [], {}
+        for chunk in stream:
+            if not chunk.choices:
+                continue
+            delta = chunk.choices[0].delta
+            if delta and delta.content:
+                content.append(delta.content)
+                yield ("delta", delta.content)
+            if delta and delta.tool_calls:
+                for tcd in delta.tool_calls:
+                    c = calls.setdefault(tcd.index, {"id": None, "name": "", "args": ""})
+                    if tcd.id:
+                        c["id"] = tcd.id
+                    if tcd.function and tcd.function.name:
+                        c["name"] = tcd.function.name
+                    if tcd.function and tcd.function.arguments:
+                        c["args"] += tcd.function.arguments
+        if not calls:
+            answer = "".join(content)
+            show = sources[:2] if "bilgi tabanımda yok" not in answer else []
+            yield ("meta", {"tools_used": tools_used, "chart": chart,
+                            "sources": show, "followups": followups_for(tools_used)})
+            return
+        messages.append({
+            "role": "assistant", "content": "".join(content) or None,
+            "tool_calls": [{"id": c["id"], "type": "function",
+                            "function": {"name": c["name"], "arguments": c["args"]}}
+                           for c in calls.values()],
+        })
+        for c in calls.values():
+            args = json.loads(c["args"] or "{}")
+            tools_used.append(c["name"])
+            result = dispatch(c["name"], args)
+            chart = _chart_from(c["name"], args, result) or chart
+            _capture_sources(c["name"], result, sources)
+            messages.append({"role": "tool", "tool_call_id": c["id"], "content": json.dumps(result)})
+
+
+@app.post("/chat/stream")
+def chat_stream(req: ChatRequest):
+    """Server-Sent Events: stream the answer token by token (stream=true)."""
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    messages += [{"role": t.role, "content": t.content} for t in req.history]
+    messages.append({"role": "user", "content": req.message})
+
+    def gen():
+        try:
+            for kind, payload in stream_turn(messages):
+                key = "delta" if kind == "delta" else "done"
+                yield f"data: {json.dumps({key: payload}, ensure_ascii=False)}\n\n"
+        except Exception:
+            yield f"data: {json.dumps({'error': 'Şu an bir aksaklık oldu, lütfen tekrar deneyin.'}, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(gen(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})

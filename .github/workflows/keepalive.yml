@@ -1,0 +1,26 @@
+name: keep-alive
+
+# Ping the App Service every ~5 minutes so the free (F1) tier does not idle out
+# and cold-start on the next visitor. Public repo -> free Actions minutes.
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Warm up the app
+        run: |
+          for i in 1 2 3; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 40 \
+              https://demand-assistant-huma.azurewebsites.net/health || echo "000")
+            echo "attempt $i -> HTTP $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 10
+          done
+          echo "app did not return 200 (may be cold); not failing the job"
