@@ -36,3 +36,9 @@ def test_alert_status_transitions():
     assert alert_status(50, 20, 85) == "REORDER"    # between safety and ROP
     assert alert_status(85, 20, 85) == "REORDER"    # exactly at ROP -> reorder
     assert alert_status(200, 20, 85) == "OK"        # well stocked
+
+
+def test_alert_status_low_days_of_cover_is_critical():
+    # Plenty above safety stock, but < 2 days of cover -> imminent stockout.
+    assert alert_status(200, 20, 85, days_of_cover=1.5) == "CRITICAL"
+    assert alert_status(200, 20, 85, days_of_cover=5) == "OK"

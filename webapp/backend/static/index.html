@@ -57,8 +57,22 @@
     .tab.active { background: var(--accent); color: #fff; }
     .spacer { margin-left: auto; }
     .theme-btn { border: 1px solid var(--border); background: var(--surface-2);
-      color: var(--text); width: 38px; height: 38px; border-radius: 9px; cursor: pointer;
+      color: var(--text); width: 38px; height: 38px; border-radius: var(--radius-sm); cursor: pointer;
       font-size: 16px; }
+    .pdf-btn { border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+      height: 38px; padding: 0 12px; border-radius: var(--radius-sm); display: inline-flex;
+      align-items: center; gap: 5px; font-size: 13px; font-weight: 500; text-decoration: none;
+      transition: all .15s; }
+    .pdf-btn:hover { border-color: var(--accent); color: var(--accent); }
+    /* Critical stock auto-alert banner */
+    .alert-banner { display: none; align-items: center; gap: 10px; margin-bottom: 12px;
+      background: color-mix(in srgb, var(--crit) 13%, transparent);
+      border: 1px solid color-mix(in srgb, var(--crit) 42%, transparent); color: var(--crit);
+      border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13.5px; animation: rise .3s ease; }
+    .alert-banner .b-act { margin-left: auto; display: flex; gap: 8px; }
+    .alert-banner button { background: transparent; border: 1px solid currentColor; color: inherit;
+      border-radius: 8px; padding: 4px 11px; font-size: 12px; cursor: pointer; }
+    .alert-banner button:hover { background: color-mix(in srgb, var(--crit) 14%, transparent); }
     main { max-width: 1160px; margin: 0 auto; padding: 22px 20px 24px; }
     .panel { display: none; }
     .panel.active { display: block; animation: fade .2s; }
@@ -245,6 +259,7 @@
         <button class="tab" data-tab="about">ℹ️ Hakkında</button>
       </nav>
       <div class="spacer"></div>
+      <a class="pdf-btn" href="/report.pdf" title="Ürün/stok raporunu PDF indir">📄 PDF rapor</a>
       <button class="theme-btn" id="theme" title="Tema">🌙</button>
     </div>
   </header>
@@ -252,6 +267,7 @@
   <main>
     <!-- CHAT -->
     <section class="panel active" id="chat-panel">
+      <div class="alert-banner" id="critBanner"></div>
       <div class="kpi-strip" id="kpiStrip"></div>
       <div id="chat">
         <div class="empty-state" id="emptyState">
@@ -527,6 +543,7 @@
       list_top_stockout_risks: "Riskli Ürünler", list_anomalies: "Anomaliler",
       abc_summary: "ABC Analizi", inventory_summary: "Envanter Özeti",
       yonetici_ozeti: "Yönetici Özeti", list_series: "Ürün Listesi",
+      whatif_simulasyon: "Ne-olur Simülasyonu",
     };
     function badges(tools) {
       if (!tools || !tools.length) return "";
@@ -644,6 +661,16 @@
           [`%${trNum(k.avg_service_level_pct)}`, "Hizmet seviyesi"],
           ["76.000", "veri kaydı"],
         ].map(([v, l]) => `<div class="k"><b>${v}</b><span>${l}</span></div>`).join("");
+
+        // Automatic critical-stock alert banner.
+        if (k.critical_alerts > 0) {
+          const bn = $("#critBanner");
+          bn.innerHTML = `⚠️ <b>${k.critical_alerts}</b> ürün kritik stokta — stok-out riski var.` +
+            `<span class="b-act"><button id="critView">Detayı gör</button><button id="critX">Kapat</button></span>`;
+          bn.style.display = "flex";
+          $("#critView").onclick = () => { input.value = "Kritik stoktaki ürünleri listele"; submit(); };
+          $("#critX").onclick = () => (bn.style.display = "none");
+        }
       } catch { $("#kpiStrip").style.display = "none"; }
     })();
 

@@ -196,6 +196,40 @@ def list_anomalies(top_n: int = 10) -> dict:
     return {"count": int(len(anom)), "anomalies": anom.head(top_n).to_dict("records")}
 
 
+PRICE_ELASTICITY = -1.2  # assumed retail price elasticity for scenario planning
+
+
+def whatif_simulasyon(store_id: str, product_id: str, price_change_pct: float) -> dict:
+    """What-if: estimate demand and revenue impact of a price change for a SKU.
+
+    Uses an assumed price elasticity (-1.2): demand scales as (1 + Δ)^elasticity.
+    """
+    inv = _inventory()
+    m = inv[(inv["Store ID"] == store_id) & (inv["Product ID"] == product_id)]
+    if m.empty:
+        return {"error": f"No data for {store_id}/{product_id}."}
+    r = m.iloc[0]
+    price = float(r["unit_price"])
+    demand = float(r["avg_daily_demand"])
+    f = 1 + price_change_pct / 100.0
+    if f <= 0:
+        return {"error": "Price change too negative."}
+    demand_mult = f ** PRICE_ELASTICITY
+    new_price, new_demand = price * f, demand * demand_mult
+    cur_rev, new_rev = price * demand, new_price * new_demand
+    return {
+        "store_id": store_id, "product_id": product_id,
+        "price_change_pct": price_change_pct,
+        "elasticity_assumed": PRICE_ELASTICITY,
+        "current": {"price": round(price, 2), "daily_demand": round(demand, 1),
+                    "daily_revenue": round(cur_rev, 0)},
+        "scenario": {"price": round(new_price, 2), "daily_demand": round(new_demand, 1),
+                     "daily_revenue": round(new_rev, 0)},
+        "demand_change_pct": round((demand_mult - 1) * 100, 1),
+        "revenue_change_pct": round((new_rev / cur_rev - 1) * 100, 1),
+    }
+
+
 RAG_MIN_SCORE = 0.30
 
 
@@ -249,6 +283,7 @@ _FUNCS = {
     "list_anomalies": list_anomalies,
     "yonetici_ozeti": yonetici_ozeti,
     "bilgi_ara": bilgi_ara,
+    "whatif_simulasyon": whatif_simulasyon,
 }
 
 TOOL_SPECS = [
@@ -302,6 +337,12 @@ TOOL_SPECS = [
         "parameters": {"type": "object", "properties": {
             "query": {"type": "string"}, "top_k": {"type": "integer", "default": 3}},
             "required": ["query"]}}},
+    {"type": "function", "function": {"name": "whatif_simulasyon",
+        "description": "What-if price simulation for a store-product: estimates the demand and revenue impact of a percentage price change (e.g. 'fiyatı %10 artırırsam ne olur'). price_change_pct is the percent change (10 for +10%, -5 for -5%).",
+        "parameters": {"type": "object", "properties": {
+            "store_id": {"type": "string"}, "product_id": {"type": "string"},
+            "price_change_pct": {"type": "number"}},
+            "required": ["store_id", "product_id", "price_change_pct"]}}},
 ]
 
 

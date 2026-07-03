@@ -1,3 +1,45 @@
 Store ID,Product ID,anomaly_type,detail,severity
 S001,P0019,Talep sıçraması,Son 7 gün ortalaması geneli %45 aştı,yüksek
 S002,P0006,Talep sıçraması,Son 7 gün ortalaması geneli %40 aştı,yüksek
+S003,P0011,Kritik stok,Mevcut stok güvenlik stoğunun altında (143),kritik
+S003,P0008,Kritik stok,Mevcut stok güvenlik stoğunun altında (170),kritik
+S005,P0009,Kritik stok,Mevcut stok güvenlik stoğunun altında (136),kritik
+S002,P0011,Kritik stok,Mevcut stok güvenlik stoğunun altında (73),kritik
+S001,P0009,Kritik stok,Mevcut stok güvenlik stoğunun altında (128),kritik
+S002,P0010,Kritik stok,Mevcut stok güvenlik stoğunun altında (143),kritik
+S004,P0018,Kritik stok,Mevcut stok güvenlik stoğunun altında (97),kritik
+S004,P0017,Kritik stok,Mevcut stok güvenlik stoğunun altında (166),kritik
+S003,P0016,Kritik stok,Mevcut stok güvenlik stoğunun altında (161),kritik
+S003,P0003,Kritik stok,Mevcut stok güvenlik stoğunun altında (95),kritik
+S005,P0019,Kritik stok,Mevcut stok güvenlik stoğunun altında (125),kritik
+S002,P0016,Kritik stok,Mevcut stok güvenlik stoğunun altında (88),kritik
+S004,P0020,Kritik stok,Mevcut stok güvenlik stoğunun altında (79),kritik
+S001,P0002,Kritik stok,Mevcut stok güvenlik stoğunun altında (136),kritik
+S003,P0020,Kritik stok,Mevcut stok güvenlik stoğunun altında (113),kritik
+S004,P0005,Kritik stok,Mevcut stok güvenlik stoğunun altında (184),kritik
+S005,P0008,Kritik stok,Mevcut stok güvenlik stoğunun altında (154),kritik
+S001,P0019,Kritik stok,Mevcut stok güvenlik stoğunun altında (110),kritik
+S002,P0009,Kritik stok,Mevcut stok güvenlik stoğunun altında (153),kritik
+S001,P0018,Kritik stok,Mevcut stok güvenlik stoğunun altında (130),kritik
+S005,P0010,Kritik stok,Mevcut stok güvenlik stoğunun altında (115),kritik
+S002,P0006,Kritik stok,Mevcut stok güvenlik stoğunun altında (98),kritik
+S004,P0008,Kritik stok,Mevcut stok güvenlik stoğunun altında (92),kritik
+S003,P0019,Kritik stok,Mevcut stok güvenlik stoğunun altında (108),kritik
+S003,P0009,Kritik stok,Mevcut stok güvenlik stoğunun altında (123),kritik
+S002,P0004,Kritik stok,Mevcut stok güvenlik stoğunun altında (129),kritik
+S001,P0016,Kritik stok,Mevcut stok güvenlik stoğunun altında (225),kritik
+S003,P0010,Kritik stok,Mevcut stok güvenlik stoğunun altında (111),kritik
+S004,P0006,Kritik stok,Mevcut stok güvenlik stoğunun altında (134),kritik
+S001,P0008,Kritik stok,Mevcut stok güvenlik stoğunun altında (162),kritik
+S005,P0002,Kritik stok,Mevcut stok güvenlik stoğunun altında (156),kritik
+S003,P0006,Kritik stok,Mevcut stok güvenlik stoğunun altında (156),kritik
+S005,P0017,Kritik stok,Mevcut stok güvenlik stoğunun altında (137),kritik
+S002,P0008,Kritik stok,Mevcut stok güvenlik stoğunun altında (85),kritik
+S001,P0013,Kritik stok,Mevcut stok güvenlik stoğunun altında (91),kritik
+S002,P0018,Kritik stok,Mevcut stok güvenlik stoğunun altında (61),kritik
+S002,P0013,Kritik stok,Mevcut stok güvenlik stoğunun altında (125),kritik
+S005,P0018,Kritik stok,Mevcut stok güvenlik stoğunun altında (197),kritik
+S005,P0020,Kritik stok,Mevcut stok güvenlik stoğunun altında (126),kritik
+S003,P0007,Kritik stok,Mevcut stok güvenlik stoğunun altında (187),kritik
+S001,P0015,Kritik stok,Mevcut stok güvenlik stoğunun altında (80),kritik
+S005,P0004,Kritik stok,Mevcut stok güvenlik stoğunun altında (141),kritik

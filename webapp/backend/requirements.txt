@@ -4,3 +4,4 @@ gunicorn
 openai
 pandas
 pydantic
+fpdf2

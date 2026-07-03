@@ -14,7 +14,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
 import pandas as pd
@@ -36,6 +36,8 @@ product IDs like P0001..P0020. When the user is vague, call list_series or
 inventory_summary to orient yourself. You can do demand forecasts, stock recommendations,
 ABC / ABC-XYZ analysis, EOQ and newsvendor order sizing, reorder points, z-score safety
 stock, turnover, and stockout/anomaly alerts. For a "yönetici özeti" call yonetici_ozeti.
+For a what-if price question like "fiyatı %10 artırırsam ne olur" call whatif_simulasyon
+and report the resulting demand and revenue change, noting the assumed elasticity.
 
 For CONCEPTUAL questions (what is / why / how — ABC, ABC-XYZ, EOQ, newsvendor, safety
 stock, reorder point, quantile forecasting, turnover, methodology) call bilgi_ara and
@@ -265,6 +267,63 @@ def api_metrics():
         except Exception:
             out[key] = []
     return out
+
+
+_TR_ASCII = str.maketrans("şŞğĞıİöÖüÜçÇ", "sSgGiIoOuUcC")
+
+
+@app.get("/report.pdf")
+def report_pdf():
+    """Generate a downloadable PDF of the product / stock report."""
+    from datetime import datetime, timezone
+
+    from fpdf import FPDF
+    from fpdf.enums import XPos, YPos
+
+    def a(s):
+        return str(s).translate(_TR_ASCII)
+
+    def line(h, text, size=11, style="", grey=False):
+        pdf.set_font("Helvetica", style, size)
+        pdf.set_text_color(120, 120, 120) if grey else pdf.set_text_color(0, 0, 0)
+        pdf.multi_cell(0, h, a(text), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+
+    inv = _csv("inventory_analytics.csv").sort_values("annual_revenue", ascending=False)
+    counts = inv["alert_status"].value_counts()
+    stock = _csv("stock_recommendations.csv")
+    naive, model = float(stock["avg_inventory_naive"].sum()), float(stock["avg_inventory_model"].sum())
+    reduction = (naive - model) / naive * 100
+    service = float(stock["service_model"].mean()) * 100
+
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(True, 15)
+    line(10, "Talep & Stok Raporu", size=16, style="B")
+    line(6, f"Olusturuldu: {datetime.now(timezone.utc):%Y-%m-%d %H:%M} UTC", size=9, grey=True)
+    pdf.ln(2)
+    line(6, f"Toplam SKU: {len(inv)}    Kritik: {int(counts.get('CRITICAL', 0))}    "
+            f"Reorder: {int(counts.get('REORDER', 0))}    OK: {int(counts.get('OK', 0))}")
+    line(6, f"Stok azaltimi: %{reduction:.1f}    Ort. hizmet seviyesi: %{service:.1f}")
+    pdf.ln(3)
+
+    cols = [("Magaza", 22), ("Urun", 22), ("ABC", 14), ("Reorder", 26),
+            ("Mevcut", 22), ("Gun", 16), ("Durum", 26)]
+    pdf.set_font("Helvetica", "B", 9)
+    pdf.set_fill_color(240, 243, 247)
+    for name, w in cols:
+        pdf.cell(w, 8, name, border=1, fill=True)
+    pdf.ln()
+    pdf.set_font("Helvetica", "", 8)
+    for _, r in inv.head(32).iterrows():
+        vals = [r["Store ID"], r["Product ID"], r["abc_class"], f"{r['reorder_point']:.0f}",
+                f"{r['current_inventory']:.0f}", f"{r['days_of_cover']:.1f}", r["alert_status"]]
+        for (name, w), v in zip(cols, vals):
+            pdf.cell(w, 7, a(v), border=1)
+        pdf.ln()
+
+    data = bytes(pdf.output())
+    return Response(content=data, media_type="application/pdf",
+                    headers={"Content-Disposition": "attachment; filename=talep_stok_raporu.pdf"})
 
 
 @app.get("/api/advanced")

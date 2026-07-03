@@ -59,9 +59,10 @@ def reorder_point(avg_daily_demand, lead_time, safety_stock):
     return avg_daily_demand * lead_time + safety_stock
 
 
-def alert_status(current_inventory, safety_stock, rop):
-    """CRITICAL below safety stock, REORDER at/below the reorder point, else OK."""
-    if current_inventory < safety_stock:
+def alert_status(current_inventory, safety_stock, rop, days_of_cover=None):
+    """CRITICAL below safety stock or under 2 days of cover (imminent stockout),
+    REORDER at/below the reorder point, else OK."""
+    if current_inventory < safety_stock or (days_of_cover is not None and days_of_cover < 2):
         return "CRITICAL"
     if current_inventory <= rop:
         return "REORDER"
@@ -105,7 +106,8 @@ def main(ordering_cost, holding_rate, lead_time):
 
     # --- Stockout alerts ----------------------------------------------------
     df["alert_status"] = df.apply(
-        lambda r: alert_status(r["current_inventory"], r["safety_stock_model"], r["reorder_point"]),
+        lambda r: alert_status(r["current_inventory"], r["safety_stock_model"],
+                               r["reorder_point"], r["days_of_cover"]),
         axis=1,
     )
 
