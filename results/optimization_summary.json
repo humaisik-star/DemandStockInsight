@@ -1,0 +1,19 @@
+{
+  "solver_status": "Optimal",
+  "n_skus": 100,
+  "budget": 4702925.61,
+  "budget_used": 4702925.59,
+  "capacity": 82351,
+  "capacity_used": 67162,
+  "total_cost": 1370182.08,
+  "holding_cost": 22548.27,
+  "stockout_penalty": 1347633.81,
+  "avg_service_fill_pct": 72.2,
+  "skus_at_full_target": 44,
+  "min_service_pct": 50.0,
+  "baseline_cost": 1619760.04,
+  "savings_vs_baseline": 249577.96,
+  "savings_pct": 15.4,
+  "horizon_days": 7,
+  "full_target_cost": 5878657.01
+}

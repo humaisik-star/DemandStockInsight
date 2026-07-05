@@ -27,6 +27,7 @@ TABLES = {
     "backtest_metrics": "backtest_metrics.csv",
     "quantile_metrics": "quantile_metrics.csv",
     "abc_xyz_matrix": "abc_xyz_matrix.csv",
+    "optimization_allocation": "optimization_allocation.csv",
 }
 
 

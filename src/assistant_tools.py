@@ -24,12 +24,15 @@ STOCK_PATH = Path("results/stock_recommendations.csv")
 INV_PATH = Path("results/inventory_analytics.csv")
 ADV_PATH = Path("results/advanced_analytics.csv")
 ANOM_PATH = Path("results/anomalies.csv")
+OPT_PATH = Path("results/optimization_allocation.csv")
+OPT_SUMMARY_PATH = Path("results/optimization_summary.json")
 
 _pred_cache = None
 _stock_cache = None
 _inv_cache = None
 _adv_cache = None
 _anom_cache = None
+_opt_cache = None
 
 
 # Loaders read from db/analysis.db when present, otherwise the result CSV.
@@ -69,6 +72,16 @@ def _anomalies() -> pd.DataFrame:
         except Exception:
             _anom_cache = pd.DataFrame()
     return _anom_cache
+
+
+def _optimization() -> pd.DataFrame:
+    global _opt_cache
+    if _opt_cache is None:
+        try:
+            _opt_cache = _load_table("optimization_allocation", OPT_PATH)
+        except Exception:
+            _opt_cache = pd.DataFrame()
+    return _opt_cache
 
 
 # --------------------------------------------------------------------------- #
@@ -279,6 +292,27 @@ def bilgi_ara(query: str, top_k: int = 3) -> dict:
         return {"error": str(e)}
 
 
+def optimizasyon_onerisi(top_n: int = 8) -> dict:
+    """Multi-store stock-allocation optimisation result (PuLP linear program).
+
+    A budget/capacity/service-constrained LP decides how many units to allocate
+    to each store-product to minimise total holding + stockout cost. Returns the
+    summary and the biggest recommended replenishment orders.
+    """
+    alloc = _optimization()
+    if alloc.empty:
+        return {"error": "Optimizasyon sonucu bulunamadı. Önce optimize_allocation.py çalıştırın."}
+    try:
+        with open(OPT_SUMMARY_PATH) as f:
+            summary = json.load(f)
+    except Exception:
+        summary = {}
+    top = alloc.sort_values("recommended_order", ascending=False).head(top_n)
+    cols = ["Store ID", "Product ID", "abc_class", "service_target",
+            "allocation", "current_inventory", "recommended_order", "service_fill_pct"]
+    return {"summary": summary, "top_orders": top[cols].to_dict("records")}
+
+
 def yonetici_ozeti() -> dict:
     """Full data snapshot for an executive summary: KPIs, ABC-XYZ, alerts, anomalies.
 
@@ -323,6 +357,7 @@ _FUNCS = {
     "get_advanced_policy": get_advanced_policy,
     "list_anomalies": list_anomalies,
     "yonetici_ozeti": yonetici_ozeti,
+    "optimizasyon_onerisi": optimizasyon_onerisi,
     "bilgi_ara": bilgi_ara,
     "whatif_simulasyon": whatif_simulasyon,
     "pdf_rapor": pdf_rapor,
@@ -453,6 +488,14 @@ TOOL_SPECS = [
             "name": "yonetici_ozeti",
             "description": "Full snapshot (KPIs, ABC/ABC-XYZ, top alerts, anomalies) to build an executive summary. Call this when the user asks for a yönetici özeti / executive summary.",
             "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "optimizasyon_onerisi",
+            "description": "Multi-store stock-ALLOCATION optimisation result from a real linear program (PuLP): under a procurement budget, warehouse-capacity limit and minimum service level, it decides how many units to allocate to each store-product to minimise total holding + stockout cost. Call for 'optimizasyon önerisi', 'stok tahsisi', 'bütçeyle en iyi dağıtım'. Returns the summary (budget/capacity used, total cost, service level, savings vs an even-cut baseline) and the biggest recommended orders.",
+            "parameters": {"type": "object", "properties": {"top_n": {"type": "integer", "default": 8}}},
         },
     },
     {

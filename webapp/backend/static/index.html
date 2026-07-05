@@ -137,6 +137,20 @@
     .fill { height: 100%; border-radius: 6px; transition: width .5s; }
 
     /* Table */
+    /* Optimization suggestion card */
+    .opt-desc { color: var(--muted); font-size: 13px; line-height: 1.55; margin: 0 0 14px; }
+    .opt-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px; margin-bottom: 16px; }
+    .opt-stat { background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 12px 14px; }
+    .opt-stat b { font-size: 20px; display: block; } .opt-stat b.good { color: var(--ok); }
+    .opt-stat span { font-size: 11.5px; color: var(--muted); }
+    .opt-orders { overflow-x: auto; }
+    .opt-orders table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .opt-orders th, .opt-orders td { padding: 8px 10px; text-align: left; white-space: nowrap;
+      border-top: 1px solid var(--border); }
+    .opt-orders thead th { color: var(--muted); font-weight: 600; border-top: none; }
+    .opt-orders td.num, .opt-orders th.num { text-align: right; font-variant-numeric: tabular-nums; }
     .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
     .filters input, .filters select { background: var(--surface); color: var(--text);
       border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; font-size: 13.5px; }
@@ -388,6 +402,10 @@
         <div class="card"><h3 data-i18n="dash_alerts">Stok durumu (uyarılar)</h3><div class="bars" id="alertBars"></div></div>
         <div class="card"><h3 data-i18n="dash_abc">ABC dağılımı</h3><div class="bars" id="abcBars"></div></div>
       </div>
+
+      <h2 class="section" data-i18n="opt_title">🧮 Optimizasyon önerisi</h2>
+      <div class="card" id="optCard"><div class="muted" data-i18n="opt_loading">Yükleniyor…</div></div>
+
       <h2 class="section" data-i18n="dash_table">Ürün tablosu</h2>
       <div class="filters">
         <input id="fSearch" data-i18n-ph="f_search" placeholder="🔍 Mağaza / ürün ara..." />
@@ -485,6 +503,11 @@
         hist_title: "Sohbet geçmişi", hist_new: "＋ Yeni sohbet", hist_empty: "Henüz kayıtlı sohbet yok.",
         hist_tip: "Sohbet geçmişi", hist_del: "Sohbeti sil", new_chat_title: "Yeni sohbet",
         dash_alerts: "Stok durumu (uyarılar)", dash_abc: "ABC dağılımı", dash_table: "Ürün tablosu",
+        opt_title: "🧮 Optimizasyon önerisi", opt_loading: "Yükleniyor…",
+        opt_desc: "Bütçe, depo kapasitesi ve minimum hizmet seviyesi kısıtları altında toplam elde tutma + stok tükenme maliyetini minimize eden doğrusal programlama (LP) çözümü. Her mağaza-ürün için önerilen tahsis:",
+        opt_service: "Ort. hizmet seviyesi", opt_budget: "Bütçe kullanımı", opt_cost: "Toplam beklenen maliyet",
+        opt_savings: "Tasarruf (eşit-dağıtıma karşı)", opt_orders_title: "En büyük sipariş önerileri",
+        opt_th_target: "Hedef", opt_th_alloc: "Tahsis", opt_th_order: "Önerilen sipariş", opt_th_fill: "Doluluk",
         f_search: "🔍 Mağaza / ürün ara...", f_all_stores: "Tüm mağazalar", f_all_abc: "Tüm ABC", f_all_status: "Tüm durumlar",
         th_store: "Mağaza", th_product: "Ürün", th_revenue: "Yıllık ciro", th_reorder: "Reorder",
         th_current: "Mevcut", th_days: "Gün", th_status: "Durum", tbl_count: "ürün gösteriliyor", class_prefix: "Sınıf",
@@ -521,6 +544,11 @@
         hist_title: "Chat history", hist_new: "＋ New chat", hist_empty: "No saved chats yet.",
         hist_tip: "Chat history", hist_del: "Delete chat", new_chat_title: "New chat",
         dash_alerts: "Stock status (alerts)", dash_abc: "ABC distribution", dash_table: "Product table",
+        opt_title: "🧮 Optimization suggestion", opt_loading: "Loading…",
+        opt_desc: "A linear program (LP) that minimises total holding + stockout cost under a procurement budget, a warehouse-capacity limit and a minimum service level, deciding the allocation for each store-product:",
+        opt_service: "Avg service level", opt_budget: "Budget used", opt_cost: "Total expected cost",
+        opt_savings: "Savings (vs even split)", opt_orders_title: "Largest recommended orders",
+        opt_th_target: "Target", opt_th_alloc: "Allocation", opt_th_order: "Recommended order", opt_th_fill: "Fill",
         f_search: "🔍 Search store / product...", f_all_stores: "All stores", f_all_abc: "All ABC", f_all_status: "All statuses",
         th_store: "Store", th_product: "Product", th_revenue: "Annual revenue", th_reorder: "Reorder",
         th_current: "Current", th_days: "Days", th_status: "Status", tbl_count: "products shown", class_prefix: "Class",
@@ -583,6 +611,7 @@
         const so = $("#fStore"); if (so.options[0]) so.options[0].textContent = T("f_all_stores");
         renderTable();
       }
+      if (typeof optData !== "undefined" && optData) renderOptimization();
       if (typeof reportsLoaded !== "undefined" && reportsLoaded) { reportsLoaded = false; loadReports(); }
     }
     langBtn.onclick = () => { LANG = LANG === "tr" ? "en" : "tr"; localStorage.setItem("lang", LANG); applyI18n(); };
@@ -650,6 +679,45 @@
           stores.map(s => `<option>${s}</option>`).join("");
         renderTable();
       } catch (e) { $("#kpis").innerHTML = `<div class="muted">${e.message}</div>`; }
+      loadOptimization();
+    }
+
+    // ---- Optimization suggestion (multi-store allocation LP) ----
+    let optData = null;
+    async function loadOptimization() {
+      try {
+        optData = await (await fetch(API + "/api/optimization")).json();
+        renderOptimization();
+      } catch (e) { $("#optCard").innerHTML = `<div class="muted">${e.message}</div>`; }
+    }
+    function renderOptimization() {
+      if (!optData) return;
+      const s = optData.summary || {}, rows = optData.allocation || [];
+      if (!rows.length) { $("#optCard").innerHTML = `<div class="muted">${T("no_data")}</div>`; return; }
+      const budgetPct = s.budget ? Math.round(s.budget_used / s.budget * 100) : 0;
+      const tiles = [
+        [`${s.avg_service_fill_pct ?? "–"}%`, T("opt_service"), "good"],
+        [`${budgetPct}%`, T("opt_budget"), ""],
+        [fmt(Math.round(s.total_cost || 0)), T("opt_cost"), ""],
+        [`${s.savings_pct ?? 0}%`, T("opt_savings"), "good"],
+      ].map(([v, l, c]) => `<div class="opt-stat"><b class="${c}">${v}</b><span>${l}</span></div>`).join("");
+      const top = rows.slice().sort((a, b) => b.recommended_order - a.recommended_order).slice(0, 8);
+      const head = `<tr><th>${T("th_store")}</th><th>${T("th_product")}</th><th>ABC</th>` +
+        `<th class="num">${T("opt_th_target")}</th><th class="num">${T("opt_th_alloc")}</th>` +
+        `<th class="num">${T("th_current")}</th><th class="num">${T("opt_th_order")}</th>` +
+        `<th class="num">${T("opt_th_fill")}</th></tr>`;
+      const body = top.map(r => `<tr>
+        <td>${esc(r["Store ID"])}</td><td>${esc(r["Product ID"])}</td>
+        <td><span class="pill ${r.abc_class}">${r.abc_class}</span></td>
+        <td class="num">${fmt(Math.round(r.service_target))}</td>
+        <td class="num">${fmt(r.allocation)}</td><td class="num">${fmt(r.current_inventory)}</td>
+        <td class="num"><b>${fmt(r.recommended_order)}</b></td>
+        <td class="num">${pct(r.service_fill_pct)}</td></tr>`).join("");
+      $("#optCard").innerHTML =
+        `<p class="opt-desc">${T("opt_desc")}</p>
+         <div class="opt-stats">${tiles}</div>
+         <h3 style="margin:0 0 8px;font-size:14px">${T("opt_orders_title")}</h3>
+         <div class="opt-orders"><table><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
     }
 
     let sortKey = "annual_revenue", sortDir = -1;

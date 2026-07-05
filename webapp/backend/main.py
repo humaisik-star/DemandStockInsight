@@ -38,6 +38,11 @@ ABC / ABC-XYZ analysis, EOQ and newsvendor order sizing, reorder points, z-score
 stock, turnover, and stockout/anomaly alerts. For a "yönetici özeti" call yonetici_ozeti.
 For a what-if price question like "fiyatı %10 artırırsam ne olur" call whatif_simulasyon
 and report the resulting demand and revenue change, noting the assumed elasticity.
+For an "optimizasyon önerisi" / "stok tahsisi" / how-to-allocate-a-limited-budget
+question, call optimizasyon_onerisi. It runs a real linear program that minimises
+total holding + stockout cost under a budget, a warehouse-capacity limit and a minimum
+service level. Report the achieved service level, the budget and capacity used, the
+savings versus an even-cut baseline, and list a few of the biggest recommended orders.
 When you list stockout or critical alerts, state the tool's "total" count (e.g. "42 kritik
 ürün") — that is the true number; never report only how many rows you happened to show.
 When the user asks for a PDF or a report ("PDF yap", "rapor oluştur"), call pdf_rapor and
@@ -171,8 +176,9 @@ FOLLOWUPS = {
     "list_stockout_alerts": ["Yönetici özeti ver", "ABC analizini özetle", "Anomalileri açıkla"],
     "abc_summary": ["ABC-XYZ analizini göster", "En değerli ürünler hangileri?", "EOQ nedir?"],
     "list_top_stockout_risks": ["Yönetici özeti ver", "Reorder gereken ürünler", "Güvenlik stoğu nedir?"],
-    "yonetici_ozeti": ["En riskli ürünleri listele", "Anomalileri açıkla", "ABC-XYZ analizini göster"],
-    "inventory_summary": ["ABC analizini özetle", "Reorder gereken ürünler", "Yönetici özeti ver"],
+    "yonetici_ozeti": ["En riskli ürünleri listele", "Anomalileri açıkla", "Optimizasyon önerisi ver"],
+    "inventory_summary": ["ABC analizini özetle", "Reorder gereken ürünler", "Optimizasyon önerisi ver"],
+    "optimizasyon_onerisi": ["Bütçeyi %20 azaltırsam ne olur?", "En riskli ürünleri listele", "Yönetici özeti ver"],
 }
 DEFAULT_FOLLOWUPS = ["Yönetici özeti ver", "ABC analizini özetle", "EOQ nedir?"]
 
@@ -394,6 +400,21 @@ def api_advanced():
     except Exception:
         adv = []
     return {"matrix": matrix_rows, "anomalies": anomalies, "advanced": adv}
+
+
+@app.get("/api/optimization")
+def api_optimization():
+    """Multi-store stock-allocation optimisation (PuLP LP): summary + full plan."""
+    try:
+        alloc = _csv("optimization_allocation.csv").to_dict("records")
+    except Exception:
+        alloc = []
+    try:
+        with open(DATA_DIR / "optimization_summary.json") as f:
+            summary = json.load(f)
+    except Exception:
+        summary = {}
+    return {"summary": summary, "allocation": alloc}
 
 
 @app.exception_handler(Exception)

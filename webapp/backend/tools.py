@@ -19,12 +19,15 @@ STOCK_PATH = DATA_DIR / "stock_recommendations.csv"
 INV_PATH = DATA_DIR / "inventory_analytics.csv"
 ADV_PATH = DATA_DIR / "advanced_analytics.csv"
 ANOM_PATH = DATA_DIR / "anomalies.csv"
+OPT_PATH = DATA_DIR / "optimization_allocation.csv"
+OPT_SUMMARY_PATH = DATA_DIR / "optimization_summary.json"
 
 _pred_cache = None
 _stock_cache = None
 _inv_cache = None
 _adv_cache = None
 _anom_cache = None
+_opt_cache = None
 
 
 # Loaders read from analysis.db when present, otherwise the bundled CSV.
@@ -64,6 +67,24 @@ def _anomalies() -> pd.DataFrame:
         except Exception:
             _anom_cache = pd.DataFrame()
     return _anom_cache
+
+
+def _optimization() -> pd.DataFrame:
+    global _opt_cache
+    if _opt_cache is None:
+        try:
+            _opt_cache = _load_table("optimization_allocation", OPT_PATH)
+        except Exception:
+            _opt_cache = pd.DataFrame()
+    return _opt_cache
+
+
+def _opt_summary() -> dict:
+    try:
+        with open(OPT_SUMMARY_PATH) as f:
+            return json.load(f)
+    except Exception:
+        return {}
 
 
 def list_series() -> dict:
@@ -255,6 +276,21 @@ def bilgi_ara(query: str, top_k: int = 3) -> dict:
         return {"error": str(e)}
 
 
+def optimizasyon_onerisi(top_n: int = 8) -> dict:
+    """Multi-store stock-allocation optimisation result. A PuLP linear program
+    minimises total holding + stockout cost under a procurement budget, a
+    warehouse-capacity limit and a minimum service level, deciding how many units
+    to allocate to each store-product. Returns the summary and the biggest
+    recommended replenishment orders."""
+    alloc = _optimization()
+    if alloc.empty:
+        return {"error": "Optimizasyon sonucu bulunamadı. Önce optimize_allocation.py çalıştırın."}
+    top = alloc.sort_values("recommended_order", ascending=False).head(top_n)
+    cols = ["Store ID", "Product ID", "abc_class", "service_target",
+            "allocation", "current_inventory", "recommended_order", "service_fill_pct"]
+    return {"summary": _opt_summary(), "top_orders": top[cols].to_dict("records")}
+
+
 def yonetici_ozeti() -> dict:
     inv = _inventory()
     stock = _stock()
@@ -291,6 +327,7 @@ _FUNCS = {
     "get_advanced_policy": get_advanced_policy,
     "list_anomalies": list_anomalies,
     "yonetici_ozeti": yonetici_ozeti,
+    "optimizasyon_onerisi": optimizasyon_onerisi,
     "bilgi_ara": bilgi_ara,
     "whatif_simulasyon": whatif_simulasyon,
     "pdf_rapor": pdf_rapor,
@@ -342,6 +379,9 @@ TOOL_SPECS = [
     {"type": "function", "function": {"name": "yonetici_ozeti",
         "description": "Full snapshot (KPIs, ABC/ABC-XYZ, top alerts, anomalies) to build an executive summary. Call when the user asks for a yönetici özeti / executive summary.",
         "parameters": {"type": "object", "properties": {}}}},
+    {"type": "function", "function": {"name": "optimizasyon_onerisi",
+        "description": "Multi-store stock-ALLOCATION optimisation result from a real linear program (PuLP): under a procurement budget, warehouse-capacity limit and minimum service level, it decides how many units to allocate to each store-product to minimise total holding + stockout cost. Call for 'optimizasyon önerisi', 'stok tahsisi', 'bütçeyle en iyi dağıtım', 'hangi ürüne ne kadar sipariş'. Returns the summary (budget/capacity used, total cost, service level, savings vs an even-cut baseline) and the biggest recommended orders.",
+        "parameters": {"type": "object", "properties": {"top_n": {"type": "integer", "default": 8}}}}},
     {"type": "function", "function": {"name": "bilgi_ara",
         "description": "Knowledge-base search (RAG) for CONCEPTUAL questions — definitions/why/how of ABC, ABC-XYZ, EOQ, newsvendor, safety stock, reorder point, quantile forecasting, turnover, and the project methodology. Use for explanations, NOT for live numbers.",
         "parameters": {"type": "object", "properties": {
