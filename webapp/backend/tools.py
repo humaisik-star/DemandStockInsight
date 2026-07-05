@@ -297,6 +297,64 @@ def bilgi_ara(query: str, top_k: int = 3) -> dict:
         return {"error": str(e)}
 
 
+# Order state the client currently holds (marked "ordered"); set per chat turn so
+# the agent can list/act on it. The UI owns the source of truth (localStorage).
+_CLIENT_ORDERS = []
+
+
+def set_client_orders(orders):
+    global _CLIENT_ORDERS
+    _CLIENT_ORDERS = orders or []
+
+
+def _critical_rows():
+    """Critical + reorder SKUs, most urgent first (critical before reorder,
+    then lowest days of cover)."""
+    inv = _inventory()
+    d = inv[inv["alert_status"].isin(["CRITICAL", "REORDER"])].copy()
+    d["_sev"] = (d["alert_status"] != "CRITICAL").astype(int)
+    return d.sort_values(["_sev", "days_of_cover"])
+
+
+def siparis_ver(top_n: int = 5, status: str = None,
+                store_id: str = None, product_id: str = None) -> dict:
+    """Place a replenishment order — mark critical/reorder SKUs as 'ordered'.
+    Returns an action the UI applies to its order list."""
+    d = _critical_rows()
+    if store_id and product_id:
+        d = d[(d["Store ID"] == store_id) & (d["Product ID"] == product_id)]
+    else:
+        if status:
+            d = d[d["alert_status"] == status.upper()]
+        d = d.head(int(top_n))
+    if d.empty:
+        return {"error": "Sipariş verilecek uygun kritik/reorder ürün bulunamadı."}
+    skus = [{"store_id": r["Store ID"], "product_id": r["Product ID"]} for _, r in d.iterrows()]
+    items = d[["Store ID", "Product ID", "abc_class", "alert_status",
+               "current_inventory", "days_of_cover"]].to_dict("records")
+    return {"action": {"op": "mark", "skus": skus}, "count": len(skus), "items": items,
+            "note": f"{len(skus)} ürün 'sipariş verildi' olarak işaretlendi."}
+
+
+def siparis_geri_al(store_id: str = None, product_id: str = None, hepsi: bool = False) -> dict:
+    """Undo a placed order (send it back to the active list). Returns an action."""
+    if hepsi:
+        return {"action": {"op": "unmark", "all": True},
+                "note": "Verilen tüm siparişler geri alındı."}
+    if store_id and product_id:
+        return {"action": {"op": "unmark",
+                           "skus": [{"store_id": store_id, "product_id": product_id}]},
+                "note": f"{store_id} {product_id} siparişi geri alındı."}
+    return {"error": "Geri almak için mağaza ve ürün belirtin ya da 'hepsi' deyin."}
+
+
+def verilen_siparisleri_listele() -> dict:
+    """List the SKUs the user currently has marked as ordered (client state)."""
+    orders = _CLIENT_ORDERS
+    return {"action": {"op": "open_orders", "subtab": "ordered"},
+            "count": len(orders), "orders": orders}
+
+
 def finansal_ozet(top_n: int = 5) -> dict:
     """Financial-metric summary: ₺ revenue, gross profit/margin, the money saved
     by the model's inventory reduction (freed capital + annual holding savings),
@@ -366,6 +424,9 @@ _FUNCS = {
     "yonetici_ozeti": yonetici_ozeti,
     "optimizasyon_onerisi": optimizasyon_onerisi,
     "finansal_ozet": finansal_ozet,
+    "siparis_ver": siparis_ver,
+    "siparis_geri_al": siparis_geri_al,
+    "verilen_siparisleri_listele": verilen_siparisleri_listele,
     "bilgi_ara": bilgi_ara,
     "whatif_simulasyon": whatif_simulasyon,
     "pdf_rapor": pdf_rapor,
@@ -416,6 +477,20 @@ TOOL_SPECS = [
         "parameters": {"type": "object", "properties": {"top_n": {"type": "integer", "default": 10}}}}},
     {"type": "function", "function": {"name": "yonetici_ozeti",
         "description": "Full snapshot (KPIs, ABC/ABC-XYZ, top alerts, anomalies) to build an executive summary. Call when the user asks for a yönetici özeti / executive summary.",
+        "parameters": {"type": "object", "properties": {}}}},
+    {"type": "function", "function": {"name": "siparis_ver",
+        "description": "Place a replenishment order for critical/reorder SKUs — marks them 'ordered' in the stock-management screen. Use for 'sipariş ver', 'en kritik 5 ürüne sipariş ver', 'kritik ürünlere sipariş ver', 'S001 P0018 için sipariş ver'. Pass top_n for the N most critical, or store_id+product_id for one specific SKU, or status ('CRITICAL'/'REORDER'). Returns the SKUs it marked; summarise how many and which.",
+        "parameters": {"type": "object", "properties": {
+            "top_n": {"type": "integer", "default": 5},
+            "status": {"type": "string", "enum": ["CRITICAL", "REORDER"]},
+            "store_id": {"type": "string"}, "product_id": {"type": "string"}}}}},
+    {"type": "function", "function": {"name": "siparis_geri_al",
+        "description": "Undo a placed order, sending the SKU back to the active list. Use for 'geri al', \"S001 P0018'i geri al\", 'tüm siparişleri geri al'. Pass store_id+product_id for one, or hepsi=true for all.",
+        "parameters": {"type": "object", "properties": {
+            "store_id": {"type": "string"}, "product_id": {"type": "string"},
+            "hepsi": {"type": "boolean", "default": False}}}}},
+    {"type": "function", "function": {"name": "verilen_siparisleri_listele",
+        "description": "List the SKUs currently marked as ordered. Use for 'verilen siparişleri listele', 'hangi ürünlere sipariş verdim', 'sipariş verilenler'.",
         "parameters": {"type": "object", "properties": {}}}},
     {"type": "function", "function": {"name": "finansal_ozet",
         "description": "Financial summary in money terms: ₺ revenue (demand×price), gross profit and margin, the ₺ saved by the model's inventory reduction (freed capital + annual holding-cost savings), portfolio inventory turnover, and promotion ROI with the average demand lift. Call for 'finansal özet', 'kâr/marj', 'ciro', 'stok azaltımı ne kadar tasarruf', 'promosyon ROI', 'stok devir hızı'. Returns the summary plus the most profitable SKUs. Numbers use the gross-margin and holding-cost assumptions stated in the result.",

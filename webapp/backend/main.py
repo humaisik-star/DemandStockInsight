@@ -20,7 +20,7 @@ from pydantic import BaseModel
 import pandas as pd
 
 from store import load as _load_table
-from tools import DATA_DIR, TOOL_SPECS, dispatch
+from tools import DATA_DIR, TOOL_SPECS, dispatch, set_client_orders
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -48,6 +48,17 @@ değişirse", "ne zaman infeasible") use the same optimizasyon_onerisi result: q
 budget shadow price as "her +1 ₺ bütçe toplam maliyeti ~X ₺ düşürür", say whether the
 budget or capacity constraint is binding or slack, and give the minimum feasible budget
 and capacity below which the plan is infeasible.
+You can also ACT as a stock-management agent. When the user asks to place or undo
+orders, call the matching tool and then briefly summarise what changed:
+  * "sipariş ver" / "en kritik 5 ürüne sipariş ver" / "S001 P0018 için sipariş ver"
+    -> call siparis_ver (top_n, or store_id+product_id, or status). Say how many and
+    which SKUs were marked ordered.
+  * "geri al" / "S001 P0018'i geri al" / "tüm siparişleri geri al" -> call
+    siparis_geri_al. Confirm what was undone.
+  * "verilen siparişleri listele" / "hangi ürünlere sipariş verdim" -> call
+    verilen_siparisleri_listele and report the count and the SKUs.
+The interface applies the change to the Orders screen automatically; do not tell the
+user to click anything — just confirm the result.
 For a "finansal özet" / money question — ciro, brüt kâr/marj, stok azaltımının ₺
 tasarrufu, stok devir hızı, promosyon ROI — call finansal_ozet and report the figures
 in ₺. State that the gross-margin and holding-cost rates are assumptions from the
@@ -139,6 +150,7 @@ class ChatRequest(BaseModel):
     message: str
     history: list[Turn] = []
     lang: str = "tr"
+    orders: list[dict] = []   # SKUs the client currently has marked "ordered"
 
 
 def _system(lang):
@@ -154,6 +166,7 @@ class ChatResponse(BaseModel):
     sources: list[dict] = []
     followups: list[str] = []
     offtopic: bool = False
+    action: dict | None = None   # UI side-effect from an order-management tool
 
 
 def _is_offtopic(answer):
@@ -190,6 +203,9 @@ FOLLOWUPS = {
     "inventory_summary": ["ABC analizini özetle", "Reorder gereken ürünler", "Optimizasyon önerisi ver"],
     "optimizasyon_onerisi": ["Bütçeyi %20 azaltırsam ne olur?", "En riskli ürünleri listele", "Finansal özet ver"],
     "finansal_ozet": ["Promosyon ROI neden negatif?", "Optimizasyon önerisi ver", "En kârlı ürünler hangileri?"],
+    "siparis_ver": ["Verilen siparişleri listele", "En kritik 5 ürüne sipariş ver", "Kritik stoktaki ürünleri listele"],
+    "verilen_siparisleri_listele": ["En kritik 5 ürüne sipariş ver", "Tüm siparişleri geri al", "Kritik stoktaki ürünleri listele"],
+    "siparis_geri_al": ["Verilen siparişleri listele", "En kritik 5 ürüne sipariş ver", "Yönetici özeti ver"],
 }
 DEFAULT_FOLLOWUPS = ["Yönetici özeti ver", "ABC analizini özetle", "EOQ nedir?"]
 
@@ -238,6 +254,7 @@ def run_turn(messages):
     tools_used = []
     chart = None
     sources = []
+    action = None
     while True:
         resp = client().chat.completions.create(
             model=deployment, messages=messages, tools=TOOL_SPECS, tool_choice="auto",
@@ -249,7 +266,7 @@ def run_turn(messages):
             if not content.strip() and tools_used:
                 content = _fallback_text(messages, deployment)
             messages.append({"role": "assistant", "content": content})
-            return content, tools_used, chart, sources
+            return content, tools_used, chart, sources, action
 
         messages.append({
             "role": "assistant",
@@ -265,6 +282,8 @@ def run_turn(messages):
             tools_used.append(tc.function.name)
             result = dispatch(tc.function.name, args)
             chart = _chart_from(tc.function.name, args, result) or chart
+            if isinstance(result, dict) and result.get("action"):
+                action = result["action"]
             if tc.function.name == "bilgi_ara" and isinstance(result, dict) and result.get("found"):
                 seen = {s["file"] for s in sources}
                 for s in result.get("sources", []):
@@ -459,16 +478,17 @@ async def json_error_handler(request: Request, exc: Exception):
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
     try:
+        set_client_orders(req.orders)
         messages = [{"role": "system", "content": _system(req.lang)}]
         messages += [{"role": t.role, "content": t.content} for t in req.history]
         messages.append({"role": "user", "content": req.message})
-        answer, tools_used, chart, sources = run_turn(messages)
+        answer, tools_used, chart, sources, action = run_turn(messages)
         # Only show source badges when the answer actually used the knowledge base.
         show_sources = sources[:2] if (answer and "bilgi tabanımda yok" not in answer) else []
         offtopic = _is_offtopic(answer)
         return ChatResponse(
             answer=answer or "", tools_used=tools_used, chart=chart,
-            sources=show_sources, offtopic=offtopic,
+            sources=show_sources, offtopic=offtopic, action=action,
             followups=[] if offtopic else followups_for(tools_used),
         )
     except Exception:
@@ -495,7 +515,7 @@ def stream_turn(messages):
     only the final assistant text is streamed token by token to the client.
     """
     deployment = os.environ["AZURE_OPENAI_DEPLOYMENT"]
-    tools_used, sources, chart = [], [], None
+    tools_used, sources, chart, action = [], [], None, None
     while True:
         stream = client().chat.completions.create(
             model=deployment, messages=messages, tools=TOOL_SPECS, tool_choice="auto",
@@ -527,7 +547,7 @@ def stream_turn(messages):
             show = sources[:2] if answer and "bilgi tabanımda yok" not in answer else []
             offtopic = _is_offtopic(answer)
             yield ("meta", {"tools_used": tools_used, "chart": chart, "sources": show,
-                            "offtopic": offtopic,
+                            "offtopic": offtopic, "action": action,
                             "followups": [] if offtopic else followups_for(tools_used)})
             return
         messages.append({
@@ -541,6 +561,8 @@ def stream_turn(messages):
             tools_used.append(c["name"])
             result = dispatch(c["name"], args)
             chart = _chart_from(c["name"], args, result) or chart
+            if isinstance(result, dict) and result.get("action"):
+                action = result["action"]
             _capture_sources(c["name"], result, sources)
             messages.append({"role": "tool", "tool_call_id": c["id"], "content": json.dumps(result)})
 
@@ -548,6 +570,7 @@ def stream_turn(messages):
 @app.post("/chat/stream")
 def chat_stream(req: ChatRequest):
     """Server-Sent Events: stream the answer token by token (stream=true)."""
+    set_client_orders(req.orders)
     messages = [{"role": "system", "content": _system(req.lang)}]
     messages += [{"role": t.role, "content": t.content} for t in req.history]
     messages.append({"role": "user", "content": req.message})

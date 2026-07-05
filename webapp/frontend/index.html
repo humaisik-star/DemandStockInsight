@@ -105,7 +105,40 @@
     .notif-foot button { width: 100%; border: 1px solid var(--border); background: var(--surface-2);
       color: var(--text); border-radius: var(--radius-sm); padding: 8px; font-size: 12.5px; font-weight: 600;
       cursor: pointer; transition: all .15s; }
+    .notif-foot { display: flex; flex-direction: column; gap: 8px; }
     .notif-foot button:hover { border-color: var(--accent); color: var(--accent); }
+    /* Orders / stock-management screen */
+    .ord-subtabs { display: flex; gap: 6px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+    .ord-subtab { border: none; background: transparent; color: var(--muted); font-size: 14px; font-weight: 600;
+      padding: 10px 6px; margin-bottom: -1px; border-bottom: 2px solid transparent; cursor: pointer; }
+    .ord-subtab:hover { color: var(--text); }
+    .ord-subtab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .ord-badge { display: inline-block; min-width: 20px; padding: 0 6px; border-radius: 10px;
+      background: var(--surface-2); color: var(--muted); font-size: 11.5px; font-weight: 700; text-align: center; }
+    .ord-subtab.active .ord-badge { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
+    .ord-bulk { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; min-height: 36px; flex-wrap: wrap; }
+    .ord-act { border: 1px solid var(--accent); background: var(--accent); color: #fff; border-radius: var(--radius-sm);
+      padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s; }
+    .ord-act:hover { background: var(--accent-2); }
+    .ord-act:disabled { opacity: .45; cursor: default; }
+    .ord-act.ghost { background: transparent; color: var(--text); border-color: var(--border); }
+    .ord-act.ghost:hover { border-color: var(--accent); color: var(--accent); }
+    #ordTable th.sel, #ordTable td.sel { width: 40px; text-align: center; }
+    #ordTable input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
+    .ord-inline { background: transparent; border: none; color: var(--accent); font-size: 12.5px; font-weight: 600;
+      cursor: pointer; padding: 4px 6px; border-radius: 6px; transition: background .12s; }
+    .ord-inline:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+    .ord-inline.undo { color: var(--muted); }
+    .ord-inline.undo:hover { color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
+    .ord-empty { color: var(--muted); text-align: center; padding: 34px 12px; }
+    /* Action toast */
+    .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
+      background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-md);
+      border-radius: var(--radius); padding: 11px 16px; display: flex; align-items: center; gap: 14px;
+      font-size: 13.5px; z-index: 60; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; max-width: 92vw; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+    .toast .t-undo { background: transparent; border: none; color: var(--accent); font-weight: 700; cursor: pointer; font-size: 13px; }
+    .toast .t-undo:hover { text-decoration: underline; }
     /* Overflow "⋯" menu (secondary actions) */
     .menu-wrap { position: relative; }
     .menu-panel { position: absolute; top: 46px; right: 0; min-width: 190px; background: var(--surface);
@@ -360,6 +393,7 @@
       <nav>
         <button class="tab active" data-tab="chat" data-i18n="tab_chat">💬 Sohbet</button>
         <button class="tab" data-tab="dash" data-i18n="tab_dash">📊 Dashboard</button>
+        <button class="tab" data-tab="orders" data-i18n="tab_orders">🧾 Siparişler</button>
         <button class="tab" data-tab="reports" data-i18n="tab_reports">📈 Raporlar</button>
         <button class="tab" data-tab="about" data-i18n="tab_about">ℹ️ Hakkında</button>
       </nav>
@@ -369,7 +403,10 @@
         <div class="notif-panel" id="notifPanel">
           <div class="notif-head"><span data-i18n="notif_title">Kritik &amp; yeniden sipariş</span><span class="nh-count" id="notifCount"></span></div>
           <div class="notif-body" id="notifBody"></div>
-          <div class="notif-foot"><button id="notifChat" data-i18n="notif_chat">Sohbette listele</button></div>
+          <div class="notif-foot">
+            <button id="notifManage" data-i18n="notif_manage">🧾 Stok yönetimini aç</button>
+            <button id="notifChat" data-i18n="notif_chat">Sohbette listele</button>
+          </div>
         </div>
       </div>
       <button class="lang-btn" id="langBtn" title="Language / Dil">EN</button>
@@ -459,6 +496,20 @@
       <div class="muted" id="tableCount" style="margin-top:8px"></div>
     </section>
 
+    <!-- ORDERS / STOCK MANAGEMENT -->
+    <section class="panel" id="orders-panel">
+      <div class="ord-subtabs">
+        <button class="ord-subtab active" data-sub="active"><span data-i18n="ord_active">Aktif Kritik</span> <span class="ord-badge" id="ordActiveCount"></span></button>
+        <button class="ord-subtab" data-sub="ordered"><span data-i18n="ord_ordered">Verilen Siparişler</span> <span class="ord-badge" id="ordOrderedCount"></span></button>
+      </div>
+      <div class="filters">
+        <input id="ordSearch" data-i18n-ph="f_search" placeholder="🔍 Mağaza / ürün ara..." />
+        <select id="ordStore"><option value="" data-i18n="f_all_stores">Tüm mağazalar</option></select>
+        <select id="ordStatus"><option value="" data-i18n="f_all_status">Tüm durumlar</option><option>CRITICAL</option><option>REORDER</option></select>
+      </div>
+      <div id="ordBody"></div>
+    </section>
+
     <!-- REPORTS -->
     <section class="panel" id="reports-panel">
       <h2 class="section" data-i18n="rep_model">Model karşılaştırması (held-out test)</h2>
@@ -502,6 +553,8 @@
     </section>
   </main>
 
+  <div class="toast" id="toast"></div>
+
   <script>
     const API = "";
     const $ = s => document.querySelector(s);
@@ -509,7 +562,11 @@
     // ---- i18n (TR / EN) ----
     const I18N = {
       tr: {
-        tab_chat: "💬 Sohbet", tab_dash: "📊 Dashboard", tab_reports: "📈 Raporlar", tab_about: "ℹ️ Hakkında",
+        tab_chat: "💬 Sohbet", tab_dash: "📊 Dashboard", tab_orders: "🧾 Siparişler", tab_reports: "📈 Raporlar", tab_about: "ℹ️ Hakkında",
+        ord_active: "Aktif Kritik", ord_ordered: "Verilen Siparişler", ord_place: "Sipariş ver",
+        ord_place_sel: "Seçilenlere sipariş ver", ord_undo_sel: "Seçilenleri geri al", ord_when: "Sipariş zamanı",
+        ord_none: "Kayıt yok", ord_placed_ok: "Sipariş verildi ✓", ord_placed_n: "ürüne sipariş verildi",
+        ord_undone_n: "sipariş geri alındı", ord_sel_count: "seçili", notif_manage: "🧾 Stok yönetimini aç",
         pdf_btn: "📄 PDF rapor",
         es_desc: "Talep tahmini, stok politikası ve envanter kavramlarını doğal dille sor. Başlamak için bir örnek seç:",
         card1_t: "📋 Yönetici özeti", card1_s: "KPI'lar + öncelikli aksiyonlar", card1_q: "Yönetici özeti ver",
@@ -561,7 +618,11 @@
         about_github: "GitHub deposu →",
       },
       en: {
-        tab_chat: "💬 Chat", tab_dash: "📊 Dashboard", tab_reports: "📈 Reports", tab_about: "ℹ️ About",
+        tab_chat: "💬 Chat", tab_dash: "📊 Dashboard", tab_orders: "🧾 Orders", tab_reports: "📈 Reports", tab_about: "ℹ️ About",
+        ord_active: "Active Critical", ord_ordered: "Placed Orders", ord_place: "Place order",
+        ord_place_sel: "Order selected", ord_undo_sel: "Undo selected", ord_when: "Ordered at",
+        ord_none: "Nothing here", ord_placed_ok: "Order placed ✓", ord_placed_n: "items ordered",
+        ord_undone_n: "orders undone", ord_sel_count: "selected", notif_manage: "🧾 Open stock management",
         pdf_btn: "📄 PDF report",
         es_desc: "Ask about demand forecasts, stock policy and inventory concepts in plain language. Pick an example to start:",
         card1_t: "📋 Executive summary", card1_s: "KPIs + priority actions", card1_q: "Give an executive summary",
@@ -664,6 +725,7 @@
       }
       if (typeof finData !== "undefined" && finData) renderFinancial();
       if (typeof optData !== "undefined" && optData) renderOptimization();
+      if (typeof renderOrders === "function") renderOrders();
       if (typeof reportsLoaded !== "undefined" && reportsLoaded) { reportsLoaded = false; loadReports(); }
     }
     langBtn.onclick = () => { LANG = LANG === "tr" ? "en" : "tr"; localStorage.setItem("lang", LANG); applyI18n(); };
@@ -689,6 +751,7 @@
       $("#" + t.dataset.tab + "-panel").classList.add("active");
       if (t.dataset.tab === "dash" && !dashLoaded) loadDashboard();
       if (t.dataset.tab === "reports" && !reportsLoaded) loadReports();
+      if (t.dataset.tab === "orders" && typeof renderOrders === "function") renderOrders();
     });
 
     // ---- Dashboard ----
@@ -999,7 +1062,7 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message,
             history: history.slice(0, -1).map(m => ({ role: m.role, content: m.content })),
-            lang: LANG }) });
+            lang: LANG, orders: ordersForApi() }) });
         if (!res.ok || !res.body) throw new Error("stream");
         const reader = res.body.getReader(), dec = new TextDecoder();
         let buf = "", started = false;
@@ -1027,6 +1090,7 @@
           cb.textContent = T("copied"); setTimeout(() => cb.textContent = T("copy"), 1500);
         });
         renderFollowups(meta && meta.offtopic ? [] : followupsFor(meta && meta.tools_used));
+        if (meta && meta.action) applyOrderAction(meta.action);
         speak(answer);
         history.push({ role: "assistant", content: answer,
           chart: meta && meta.chart, tools: meta && meta.tools_used, sources: meta && meta.sources });
@@ -1237,56 +1301,48 @@
     // ---- Critical-stock notification bell + dropdown ----
     const bellBtn = $("#bellBtn"), bellBadge = $("#bellBadge"), notifPanel = $("#notifPanel");
     let notifRows = [];
-    // SKUs the user marked "order placed" — persisted so it survives a reload.
+
+    // ---- Shared order state: skuKey -> timestamp(ms). Persisted in localStorage. ----
     const ORDERED_KEY = "dsi_ordered";
-    let ordered = (() => { try { return new Set(JSON.parse(localStorage.getItem(ORDERED_KEY)) || []); } catch { return new Set(); } })();
+    let orders = (() => {
+      try {
+        const raw = JSON.parse(localStorage.getItem(ORDERED_KEY));
+        if (Array.isArray(raw)) { const o = {}; raw.forEach(k => o[k] = Date.now()); return o; } // migrate old Set
+        return (raw && typeof raw === "object") ? raw : {};
+      } catch { return {}; }
+    })();
     const skuKey = r => `${r["Store ID"]}|${r["Product ID"]}`;
-    const saveOrdered = () => { try { localStorage.setItem(ORDERED_KEY, JSON.stringify([...ordered])); } catch {} };
+    const isOrdered = k => Object.prototype.hasOwnProperty.call(orders, k);
+    const saveOrders = () => { try { localStorage.setItem(ORDERED_KEY, JSON.stringify(orders)); } catch {} };
+    function markOrdered(k, ts) { if (!isOrdered(k)) orders[k] = ts || Date.now(); }
+    function unmarkOrdered(k) { delete orders[k]; }
+    function afterOrdersChange() { saveOrders(); refreshBadge(); renderNotif(); renderOrders(); }
+    const ordersForApi = () => Object.keys(orders).map(k => {
+      const [s, p] = k.split("|"); return { store_id: s, product_id: p, ts: orders[k] };
+    });
 
     function refreshBadge() {
       // Badge = pending (not-yet-ordered) CRITICAL SKUs.
       const n = notifRows.length
-        ? notifRows.filter(r => r.alert_status === "CRITICAL" && !ordered.has(skuKey(r))).length
+        ? notifRows.filter(r => r.alert_status === "CRITICAL" && !isOrdered(skuKey(r))).length
         : ((lastKpi && lastKpi.critical_alerts) || 0);
       if (n > 0) { bellBadge.textContent = n > 99 ? "99+" : n; bellBadge.style.display = ""; }
       else bellBadge.style.display = "none";
     }
     const updateBell = () => refreshBadge();
 
-    function setOrdered(key, val) {
-      if (val) ordered.add(key); else ordered.delete(key);
-      saveOrdered();
-      renderNotif();
-    }
-
-    function notifItemHTML(r) {
-      const key = skuKey(r), done = ordered.has(key);
-      const right = done
-        ? `<button class="ni-undo" data-key="${esc(key)}">↩ ${esc(T("notif_undo"))}</button>`
-        : `<span class="pill ${r.alert_status}">${r.alert_status}</span>`;
-      const tip = esc(done ? T("notif_undo") : T("notif_mark"));
-      return `<div class="notif-item${done ? " done" : ""}" data-key="${esc(key)}">
-        <button class="ni-check${done ? " checked" : ""}" data-key="${esc(key)}" title="${tip}" aria-label="${tip}">✓</button>
-        <div class="ni-main">
-          <b>${esc(r["Store ID"])} · ${esc(r["Product ID"])}</b>
-          <span class="ni-sub">${esc(T("th_current"))}: ${fmt(r.current_inventory)} · ${esc(T("th_days"))}: ${r.days_of_cover}</span>
-        </div>${right}</div>`;
-    }
-
+    // Bell dropdown = quick read-only view; real work happens on the Orders screen.
     function renderNotif() {
       const body = $("#notifBody"), cnt = $("#notifCount");
       if (!notifRows.length) { cnt.textContent = ""; body.innerHTML = `<div class="notif-empty">${esc(T("notif_empty"))}</div>`; refreshBadge(); return; }
-      const pending = notifRows.filter(r => !ordered.has(skuKey(r)));
-      const done = notifRows.filter(r => ordered.has(skuKey(r)));
-      cnt.textContent = pending.length;                       // top counter drops as items are ordered
-      // Pending first, ordered ones sink (faded) to the bottom.
-      body.innerHTML = pending.concat(done).slice(0, 80).map(notifItemHTML).join("");
-      body.querySelectorAll(".ni-check").forEach(btn => btn.onclick = e => {
-        e.stopPropagation(); const k = btn.dataset.key; setOrdered(k, !ordered.has(k));
-      });
-      body.querySelectorAll(".ni-undo").forEach(btn => btn.onclick = e => {
-        e.stopPropagation(); setOrdered(btn.dataset.key, false);
-      });
+      const pending = notifRows.filter(r => !isOrdered(skuKey(r)));
+      cnt.textContent = pending.length || "";
+      body.innerHTML = pending.length
+        ? pending.slice(0, 40).map(r => `<div class="notif-item"><div class="ni-main">
+             <b>${esc(r["Store ID"])} · ${esc(r["Product ID"])}</b>
+             <span class="ni-sub">${esc(T("th_current"))}: ${fmt(r.current_inventory)} · ${esc(T("th_days"))}: ${r.days_of_cover}</span>
+           </div><span class="pill ${r.alert_status}">${r.alert_status}</span></div>`).join("")
+        : `<div class="notif-empty">${esc(T("notif_empty"))}</div>`;
       refreshBadge();
     }
     async function loadNotif() {
@@ -1297,7 +1353,7 @@
             ? a.days_of_cover - b.days_of_cover
             : (a.alert_status === "CRITICAL" ? -1 : 1));
       } catch { notifRows = []; }
-      renderNotif();
+      renderNotif(); renderOrders();
     }
     bellBtn.onclick = e => { e.stopPropagation(); notifPanel.classList.toggle("open"); };
     document.addEventListener("click", e => {
@@ -1305,12 +1361,135 @@
         notifPanel.classList.remove("open");
     });
     addEventListener("keydown", e => { if (e.key === "Escape") notifPanel.classList.remove("open"); });
+    const openTab = name => { const tb = document.querySelector(`.tab[data-tab="${name}"]`); if (tb) tb.click(); };
+    $("#notifManage").onclick = () => { notifPanel.classList.remove("open"); openTab("orders"); };
     $("#notifChat").onclick = () => {
       notifPanel.classList.remove("open");
       const chatTab = document.querySelector('.tab[data-tab="chat"]');
       if (chatTab && !chatTab.classList.contains("active")) chatTab.click();
       input.value = T("crit_q"); submit();
     };
+
+    // ---- Orders / stock-management screen (full page, agent-driven) ----
+    let ordSub = "active";
+    const fmtDateTime = ts => {
+      try {
+        return new Date(ts).toLocaleString(LANG === "tr" ? "tr-TR" : "en-US",
+          { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+      } catch { return ""; }
+    };
+    function ordFiltered() {
+      const q = ($("#ordSearch") ? $("#ordSearch").value : "").toLowerCase();
+      const st = $("#ordStore") ? $("#ordStore").value : "", stat = $("#ordStatus") ? $("#ordStatus").value : "";
+      return notifRows.filter(r =>
+        (!q || (r["Store ID"] + r["Product ID"]).toLowerCase().includes(q)) &&
+        (!st || r["Store ID"] === st) && (!stat || r.alert_status === stat));
+    }
+    let ordWired = false;
+    function renderOrders() {
+      const body = $("#ordBody"); if (!body) return;
+      // Populate the store filter once, refresh its "all" label every render.
+      const store = $("#ordStore");
+      if (store) {
+        if (store.options.length <= 1 && notifRows.length) {
+          const stores = [...new Set(notifRows.map(r => r["Store ID"]))].sort();
+          store.innerHTML = `<option value="">${T("f_all_stores")}</option>` + stores.map(s => `<option>${s}</option>`).join("");
+        } else if (store.options[0]) store.options[0].textContent = T("f_all_stores");
+      }
+      const totActive = notifRows.filter(r => !isOrdered(skuKey(r))).length;
+      const totOrdered = notifRows.filter(r => isOrdered(skuKey(r))).length;
+      if ($("#ordActiveCount")) $("#ordActiveCount").textContent = totActive;
+      if ($("#ordOrderedCount")) $("#ordOrderedCount").textContent = totOrdered;
+      if (!ordWired) {
+        ["ordSearch", "ordStore", "ordStatus"].forEach(id => { const el = $("#" + id); if (el) el.addEventListener("input", renderOrders); });
+        document.querySelectorAll(".ord-subtab").forEach(b => b.onclick = () => {
+          document.querySelectorAll(".ord-subtab").forEach(x => x.classList.remove("active"));
+          b.classList.add("active"); ordSub = b.dataset.sub; renderOrders();
+        });
+        ordWired = true;
+      }
+      if (!notifRows.length) { body.innerHTML = `<div class="ord-empty">${T("no_data")}</div>`; return; }
+
+      const all = ordFiltered();
+      const rows = ordSub === "active" ? all.filter(r => !isOrdered(skuKey(r))) : all.filter(r => isOrdered(skuKey(r)));
+      const bulkBtn = ordSub === "active"
+        ? `<button class="ord-act" id="ordBulkAct" disabled>${T("ord_place_sel")}</button>`
+        : `<button class="ord-act ghost" id="ordBulkAct" disabled>${T("ord_undo_sel")}</button>`;
+      let head, tbody;
+      if (ordSub === "active") {
+        head = `<tr><th class="sel"><input type="checkbox" id="ordAll"></th>
+          <th>${T("th_store")}</th><th>${T("th_product")}</th><th class="num">${T("th_current")}</th>
+          <th class="num">${T("th_days")}</th><th>${T("th_status")}</th><th>ABC</th><th></th></tr>`;
+        tbody = rows.map(r => { const k = skuKey(r); return `<tr data-key="${esc(k)}">
+          <td class="sel"><input type="checkbox" class="ord-cb" data-key="${esc(k)}"></td>
+          <td>${esc(r["Store ID"])}</td><td>${esc(r["Product ID"])}</td>
+          <td class="num">${fmt(r.current_inventory)}</td><td class="num">${r.days_of_cover}</td>
+          <td><span class="pill ${r.alert_status}">${r.alert_status}</span></td>
+          <td><span class="pill ${r.abc_class}">${r.abc_class}</span></td>
+          <td><button class="ord-inline" data-key="${esc(k)}" data-op="mark">${T("ord_place")}</button></td></tr>`; }).join("");
+      } else {
+        head = `<tr><th class="sel"><input type="checkbox" id="ordAll"></th>
+          <th>${T("th_store")}</th><th>${T("th_product")}</th><th>${T("ord_when")}</th>
+          <th>${T("th_status")}</th><th>ABC</th><th></th></tr>`;
+        tbody = rows.map(r => { const k = skuKey(r); return `<tr data-key="${esc(k)}">
+          <td class="sel"><input type="checkbox" class="ord-cb" data-key="${esc(k)}"></td>
+          <td>${esc(r["Store ID"])}</td><td>${esc(r["Product ID"])}</td>
+          <td>${esc(fmtDateTime(orders[k]))}</td>
+          <td><span class="pill ${r.alert_status}">${r.alert_status}</span></td>
+          <td><span class="pill ${r.abc_class}">${r.abc_class}</span></td>
+          <td><button class="ord-inline undo" data-key="${esc(k)}" data-op="unmark">↩ ${T("notif_undo")}</button></td></tr>`; }).join("");
+      }
+      const colspan = ordSub === "active" ? 8 : 7;
+      body.innerHTML = `<div class="ord-bulk"><span class="muted" id="ordSel"></span>${bulkBtn}</div>
+        <div class="tablewrap"><table id="ordTable"><thead>${head}</thead>
+        <tbody>${tbody || `<tr><td colspan="${colspan}" class="ord-empty">${T("ord_none")}</td></tr>`}</tbody></table></div>`;
+
+      const upSel = () => {
+        const n = document.querySelectorAll("#ordTable .ord-cb:checked").length;
+        $("#ordSel").textContent = n ? `${n} ${T("ord_sel_count")}` : "";
+        $("#ordBulkAct").disabled = !n;
+      };
+      const allBox = $("#ordAll");
+      if (allBox) allBox.onchange = () => { document.querySelectorAll("#ordTable .ord-cb").forEach(cb => cb.checked = allBox.checked); upSel(); };
+      document.querySelectorAll("#ordTable .ord-cb").forEach(cb => cb.onchange = upSel);
+      document.querySelectorAll("#ordTable .ord-inline").forEach(btn => btn.onclick = () => {
+        const k = btn.dataset.key;
+        if (btn.dataset.op === "mark") { markOrdered(k); afterOrdersChange(); toastOrdered(k); }
+        else { unmarkOrdered(k); afterOrdersChange(); }
+      });
+      const bulk = $("#ordBulkAct");
+      if (bulk) bulk.onclick = () => {
+        const keys = [...document.querySelectorAll("#ordTable .ord-cb:checked")].map(cb => cb.dataset.key);
+        if (!keys.length) return;
+        if (ordSub === "active") { keys.forEach(markOrdered); toast(`${keys.length} ${T("ord_placed_n")}`); }
+        else { keys.forEach(unmarkOrdered); toast(`${keys.length} ${T("ord_undone_n")}`); }
+        afterOrdersChange();
+      };
+    }
+
+    // Toast with optional one-click undo.
+    let toastTimer = null;
+    function toast(msg, undoKey) {
+      const t = $("#toast"); if (!t) return;
+      t.innerHTML = `<span>${esc(msg)}</span>` + (undoKey ? `<button class="t-undo">${esc(T("notif_undo"))}</button>` : "");
+      if (undoKey) t.querySelector(".t-undo").onclick = () => { unmarkOrdered(undoKey); afterOrdersChange(); t.classList.remove("show"); };
+      t.classList.add("show");
+      clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 5000);
+    }
+    const toastOrdered = k => toast(`${k.replace("|", " ")} — ${T("ord_placed_ok")}`, k);
+
+    // Apply an agent action returned by the chatbot to the shared order state.
+    function applyOrderAction(a) {
+      if (!a) return;
+      if (a.op === "mark" && a.skus) { a.skus.forEach(s => markOrdered(`${s.store_id}|${s.product_id}`)); afterOrdersChange(); toast(`${a.skus.length} ${T("ord_placed_n")}`); }
+      else if (a.op === "unmark") {
+        if (a.all) { orders = {}; afterOrdersChange(); }
+        else if (a.skus) { a.skus.forEach(s => unmarkOrdered(`${s.store_id}|${s.product_id}`)); afterOrdersChange(); }
+      } else if (a.op === "open_orders") {
+        if (a.subtab) { ordSub = a.subtab; document.querySelectorAll(".ord-subtab").forEach(x => x.classList.toggle("active", x.dataset.sub === a.subtab)); }
+        renderOrders();
+      }
+    }
     (async () => {
       try { lastKpi = await (await fetch(API + "/api/kpis")).json(); updateBell(); }
       catch {}
