@@ -7,27 +7,27 @@
   <style>
     :root {
       --bg: #f4f6f9; --surface: #ffffff; --surface-2: #f0f3f7; --border: #e2e8f0;
-      --text: #1a2733; --muted: #64748b; --accent: #2b8cbe; --accent-2: #1f6f99;
-      --a: #2b8cbe; --b: #7bccc4; --c: #bae4bc;
-      --crit: #e34a33; --warn: #f39c12; --ok: #27ae60;
+      --text: #1a2733; --muted: #64748b; --accent: #2f9e63; --accent-2: #25814f;
+      --a: #2f9e63; --b: #94a3b8; --c: #cbd5e1;
+      --crit: #e05a44; --warn: #c68a3a; --ok: #2f9e63;
       --radius: 14px; --radius-sm: 10px;
       --shadow: 0 2px 8px rgba(16,24,40,.06), 0 1px 2px rgba(16,24,40,.05);
       --shadow-md: 0 8px 24px rgba(16,24,40,.10);
     }
     :root[data-theme="dark"] {
       --bg: #0f1720; --surface: #17212b; --surface-2: #1e2b38; --border: #26333f;
-      --text: #e6edf3; --muted: #8aa0b3; --accent: #34c0eb; --accent-2: #2b8cbe;
-      --a: #2b8cbe; --b: #34c0eb; --c: #7bccc4;
-      --crit: #ff6b5b; --warn: #f5b041; --ok: #35d07f;
+      --text: #e6edf3; --muted: #8aa0b3; --accent: #3bbd77; --accent-2: #2f9e63;
+      --a: #3bbd77; --b: #8b97a8; --c: #5c6a7d;
+      --crit: #f0705d; --warn: #d69f4e; --ok: #3bbd77;
       --shadow: 0 2px 10px rgba(0,0,0,.35), 0 1px 2px rgba(0,0,0,.3);
       --shadow-md: 0 10px 28px rgba(0,0,0,.45);
     }
     @media (prefers-color-scheme: dark) {
       :root:not([data-theme="light"]) {
         --bg: #0f1720; --surface: #17212b; --surface-2: #1e2b38; --border: #26333f;
-        --text: #e6edf3; --muted: #8aa0b3; --accent: #34c0eb; --accent-2: #2b8cbe;
-        --a: #2b8cbe; --b: #34c0eb; --c: #7bccc4;
-        --crit: #ff6b5b; --warn: #f5b041; --ok: #35d07f;
+        --text: #e6edf3; --muted: #8aa0b3; --accent: #3bbd77; --accent-2: #2f9e63;
+        --a: #3bbd77; --b: #8b97a8; --c: #5c6a7d;
+        --crit: #f0705d; --warn: #d69f4e; --ok: #3bbd77;
         --shadow: 0 2px 10px rgba(0,0,0,.35), 0 1px 2px rgba(0,0,0,.3);
         --shadow-md: 0 10px 28px rgba(0,0,0,.45);
       }
@@ -47,7 +47,7 @@
       gap: 16px; padding: 12px 20px; flex-wrap: wrap; }
     .brand { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 16px; }
     .brand .logo { width: 26px; height: 26px; border-radius: 7px;
-      background: linear-gradient(135deg, var(--accent), var(--b)); display: grid;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: grid;
       place-items: center; color: #fff; font-size: 14px; }
     nav { display: flex; gap: 4px; margin-left: 8px; flex-wrap: wrap; }
     .tab { border: none; background: transparent; color: var(--muted);
@@ -173,7 +173,7 @@
     .empty-state { height: 100%; display: flex; flex-direction: column; align-items: center;
       justify-content: center; text-align: center; padding: 16px; }
     .es-logo { width: 62px; height: 62px; border-radius: var(--radius); display: grid; place-items: center;
-      font-size: 31px; background: linear-gradient(135deg, var(--accent), var(--b)); margin-bottom: 20px; box-shadow: var(--shadow-md); }
+      font-size: 31px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); margin-bottom: 20px; box-shadow: var(--shadow-md); }
     .empty-state h2 { margin: 0 0 10px; font-size: 24px; }
     .empty-state p { color: var(--muted); margin: 0 0 32px; max-width: 440px; line-height: 1.6; }
     .es-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; max-width: 480px; }
@@ -318,6 +318,7 @@
 <body>
   <header>
     <div class="bar">
+      <button class="theme-btn" id="sidebarBtn" data-i18n-title="hist_tip" title="Sohbet geçmişi">☰</button>
       <div class="brand"><span class="logo">📦</span> Demand &amp; Stock Insight</div>
       <nav>
         <button class="tab active" data-tab="chat" data-i18n="tab_chat">💬 Sohbet</button>
@@ -340,7 +341,6 @@
         <button class="theme-btn" id="menuBtn" data-i18n-title="menu_tip" title="Menü">⋯</button>
         <div class="menu-panel" id="menuPanel">
           <a class="menu-item" href="/report.pdf" data-i18n="pdf_btn">📄 PDF rapor</a>
-          <button class="menu-item" id="menuHist" data-i18n="menu_hist">🕘 Sohbet geçmişi</button>
         </div>
       </div>
     </div>
@@ -788,7 +788,7 @@
       const x = k => P + (W - 2 * P) * (n <= 1 ? 0.5 : k / (n - 1));
       const y = v => H - P - (H - 2 * P) * (v - mn) / span;
       const cs = getComputedStyle(document.documentElement);
-      const col = [cs.getPropertyValue("--accent").trim() || "#2b8cbe", cs.getPropertyValue("--muted").trim() || "#888"];
+      const col = [cs.getPropertyValue("--accent").trim() || "#2f9e63", cs.getPropertyValue("--muted").trim() || "#888"];
       const paths = chart.series.map((s, si) => {
         const pts = s.values.map((v, k) => v == null ? null : `${x(k).toFixed(1)},${y(v).toFixed(1)}`).filter(Boolean).join(" ");
         return `<polyline fill="none" stroke="${col[si % 2]}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${pts}"/>`;
@@ -986,10 +986,12 @@
       });
     }
 
-    // Drawer open/close
+    // Drawer open/close — opened by the left-side sidebar button (ChatGPT-style)
     const drawer = $("#histDrawer"), overlay = $("#histOverlay");
     const openDrawer = () => { renderChatList(); drawer.classList.add("open"); overlay.classList.add("open"); };
     const closeDrawer = () => { drawer.classList.remove("open"); overlay.classList.remove("open"); };
+    const toggleDrawer = () => drawer.classList.contains("open") ? closeDrawer() : openDrawer();
+    $("#sidebarBtn").onclick = toggleDrawer;
     $("#histClose").onclick = closeDrawer;
     overlay.onclick = closeDrawer;
     $("#newChat").onclick = startNewChat;
@@ -1004,7 +1006,6 @@
       if (menuPanel.classList.contains("open") && !menuPanel.contains(e.target) && e.target !== menuBtn) closeMenu();
     });
     addEventListener("keydown", e => { if (e.key === "Escape") closeMenu(); });
-    $("#menuHist").onclick = () => { closeMenu(); openDrawer(); };
 
     // KPI numbers live on the Dashboard tab now; the chat screen stays clean.
     let lastKpi = null;
