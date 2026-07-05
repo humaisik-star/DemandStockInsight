@@ -392,7 +392,7 @@
         crit_a: "ürün kritik stokta — stok-out riski var.", crit_view: "Detayı gör", crit_close: "Kapat",
         crit_q: "Kritik stoktaki ürünleri listele",
         fu_label: "Bunu da sorabilirsin:", copy: "📋 Kopyala", copied: "✓ Kopyalandı",
-        err: "⚠️ Bir aksaklık oldu, lütfen birkaç saniye sonra tekrar dene.", empty: "(boş yanıt)", unit_adet: "adet",
+        err: "⚠️ Bir aksaklık oldu, lütfen birkaç saniye sonra tekrar dene.", empty: "İşte istediğin sonuçlar 👇", unit_adet: "adet",
         dash_alerts: "Stok durumu (uyarılar)", dash_abc: "ABC dağılımı", dash_table: "Ürün tablosu",
         f_search: "🔍 Mağaza / ürün ara...", f_all_stores: "Tüm mağazalar", f_all_abc: "Tüm ABC", f_all_status: "Tüm durumlar",
         th_store: "Mağaza", th_product: "Ürün", th_revenue: "Yıllık ciro", th_reorder: "Reorder",
@@ -423,7 +423,7 @@
         crit_a: "products are critically low — stockout risk.", crit_view: "View details", crit_close: "Dismiss",
         crit_q: "List the critically low products",
         fu_label: "You could also ask:", copy: "📋 Copy", copied: "✓ Copied",
-        err: "⚠️ Something went wrong, please try again in a moment.", empty: "(empty response)", unit_adet: "units",
+        err: "⚠️ Something went wrong, please try again in a moment.", empty: "Here are your results 👇", unit_adet: "units",
         dash_alerts: "Stock status (alerts)", dash_abc: "ABC distribution", dash_table: "Product table",
         f_search: "🔍 Search store / product...", f_all_stores: "All stores", f_all_abc: "All ABC", f_all_status: "All statuses",
         th_store: "Store", th_product: "Product", th_revenue: "Annual revenue", th_reorder: "Reorder",
@@ -626,6 +626,7 @@
     // Minimal, safe Markdown -> HTML (headings, bold, code, lists, tables).
     const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const inlineMd = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
       .replace(/`([^`]+?)`/g, "<code>$1</code>");
     function mdToHtml(md) {
       const lines = (md || "").replace(/\r/g, "").split("\n");
@@ -664,12 +665,12 @@
         get_inventory_policy: "Envanter Politikası", get_advanced_policy: "İleri Politika", list_stockout_alerts: "Stok Uyarıları",
         list_top_stockout_risks: "Riskli Ürünler", list_anomalies: "Anomaliler", abc_summary: "ABC Analizi",
         inventory_summary: "Envanter Özeti", yonetici_ozeti: "Yönetici Özeti", list_series: "Ürün Listesi",
-        whatif_simulasyon: "Ne-olur Simülasyonu" },
+        whatif_simulasyon: "Ne-olur Simülasyonu", pdf_rapor: "PDF Raporu" },
       en: { bilgi_ara: "Knowledge search", get_demand_forecast: "Demand forecast", get_stock_recommendation: "Stock recommendation",
         get_inventory_policy: "Inventory policy", get_advanced_policy: "Advanced policy", list_stockout_alerts: "Stock alerts",
         list_top_stockout_risks: "Risky products", list_anomalies: "Anomalies", abc_summary: "ABC analysis",
         inventory_summary: "Inventory summary", yonetici_ozeti: "Executive summary", list_series: "Product list",
-        whatif_simulasyon: "What-if simulation" },
+        whatif_simulasyon: "What-if simulation", pdf_rapor: "PDF report" },
     };
     function badges(tools) {
       if (!tools || !tools.length) return "";

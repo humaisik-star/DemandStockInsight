@@ -40,6 +40,10 @@ For a what-if price question like "fiyatı %10 artırırsam ne olur" call whatif
 and report the resulting demand and revenue change, noting the assumed elasticity.
 When you list stockout or critical alerts, state the tool's "total" count (e.g. "42 kritik
 ürün") — that is the true number; never report only how many rows you happened to show.
+When the user asks for a PDF or a report ("PDF yap", "rapor oluştur"), call pdf_rapor and
+reply with a clickable Markdown download link, e.g. "[PDF raporu indir](/report.pdf)". Do
+NOT ask for a file name or a logo — produce the default report directly; you may add one
+short line that the header PDF button offers the same download.
 
 For CONCEPTUAL questions (what is / why / how — ABC, ABC-XYZ, EOQ, newsvendor, safety
 stock, reorder point, quantile forecasting, turnover, methodology) call bilgi_ara and
@@ -48,6 +52,8 @@ shows the source. If bilgi_ara returns found=false or the chunks do not actually
 what was asked, reply exactly "Bu konu bilgi tabanımda yok." — never invent or stretch.
 
 HOW TO WRITE THE ANSWER:
+- ALWAYS write explanatory text. Even when a chart, table, or tool result is shown, add at
+  least one sentence describing the key takeaway. Never return an empty message.
 - Match length to the question. A simple question gets one or two sentences. A complex
   question gets a fuller, structured answer. Never force every reply into the same shape.
 - Write plain, direct sentences.
@@ -176,6 +182,20 @@ def _chart_from(name, args, result):
     return None
 
 
+def _fallback_text(messages, deployment):
+    """If the model returns an empty final answer, ask it to summarize the tool
+    result so the user never sees an empty bubble."""
+    msgs = messages + [{"role": "user",
+                        "content": "Summarize the result you just produced in 1-3 short "
+                                   "sentences with the key numbers. Do not call any tool."}]
+    try:
+        resp = client().chat.completions.create(
+            model=deployment, messages=msgs, max_completion_tokens=500, reasoning_effort="low")
+        return (resp.choices[0].message.content or "").strip()
+    except Exception:
+        return ""
+
+
 def run_turn(messages):
     """Resolve tool calls until the model returns a text answer."""
     deployment = os.environ["AZURE_OPENAI_DEPLOYMENT"]
@@ -189,8 +209,11 @@ def run_turn(messages):
         )
         msg = resp.choices[0].message
         if not msg.tool_calls:
-            messages.append({"role": "assistant", "content": msg.content})
-            return msg.content, tools_used, chart, sources
+            content = msg.content or ""
+            if not content.strip() and tools_used:
+                content = _fallback_text(messages, deployment)
+            messages.append({"role": "assistant", "content": content})
+            return content, tools_used, chart, sources
 
         messages.append({
             "role": "assistant",
@@ -429,7 +452,11 @@ def stream_turn(messages):
                         c["args"] += tcd.function.arguments
         if not calls:
             answer = "".join(content)
-            show = sources[:2] if "bilgi tabanımda yok" not in answer else []
+            if not answer.strip() and tools_used:
+                answer = _fallback_text(messages, deployment)
+                if answer:
+                    yield ("delta", answer)
+            show = sources[:2] if answer and "bilgi tabanımda yok" not in answer else []
             yield ("meta", {"tools_used": tools_used, "chart": chart,
                             "sources": show, "followups": followups_for(tools_used)})
             return

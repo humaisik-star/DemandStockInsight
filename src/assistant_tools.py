@@ -250,6 +250,15 @@ def whatif_simulasyon(store_id: str, product_id: str, price_change_pct: float) -
     }
 
 
+def pdf_rapor() -> dict:
+    """Download link for the default product/stock PDF report."""
+    return {
+        "download_url": "/report.pdf",
+        "filename": "talep_stok_raporu.pdf",
+        "note": "Varsayılan ürün/stok raporu hazır — linke tıklayıp indirin.",
+    }
+
+
 RAG_MIN_SCORE = 0.30  # below this the query is treated as out-of-knowledge-base
 
 
@@ -316,6 +325,7 @@ _FUNCS = {
     "yonetici_ozeti": yonetici_ozeti,
     "bilgi_ara": bilgi_ara,
     "whatif_simulasyon": whatif_simulasyon,
+    "pdf_rapor": pdf_rapor,
 }
 
 TOOL_SPECS = [
@@ -474,6 +484,14 @@ TOOL_SPECS = [
                 },
                 "required": ["store_id", "product_id", "price_change_pct"],
             },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "pdf_rapor",
+            "description": "Give the download link for the default product/stock PDF report. Call when the user asks to create/download a PDF or report; do not ask for a filename or logo.",
+            "parameters": {"type": "object", "properties": {}},
         },
     },
 ]
