@@ -274,10 +274,12 @@
       padding: 14px 0; text-align: center; font-weight: 700; font-size: 18px; }
     .matrix .cell small { display: block; font-weight: 500; font-size: 10px; color: var(--muted); margin-top: 2px; }
     /* Chat history drawer */
-    .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.42); z-index: 40;
-      opacity: 0; pointer-events: none; transition: opacity .2s; }
+    /* Drawer + overlay start below the header so the top bar stays visible/usable */
+    .drawer-overlay { position: fixed; inset: var(--header-h, 64px) 0 0 0; background: rgba(0,0,0,.42);
+      z-index: 40; opacity: 0; pointer-events: none; transition: opacity .2s; }
     .drawer-overlay.open { opacity: 1; pointer-events: auto; }
-    .drawer { position: fixed; top: 0; left: 0; height: 100dvh; width: 300px; max-width: 85vw;
+    .drawer { position: fixed; top: var(--header-h, 64px); left: 0; height: calc(100dvh - var(--header-h, 64px));
+      width: 300px; max-width: 85vw;
       background: var(--surface); border-right: 1px solid var(--border); box-shadow: var(--shadow-md);
       z-index: 41; transform: translateX(-100%); transition: transform .22s ease;
       display: flex; flex-direction: column; padding: 14px; gap: 10px; }
