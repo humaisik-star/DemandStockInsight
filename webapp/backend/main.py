@@ -51,6 +51,17 @@ answer ONLY from the returned chunks. Do NOT add a "Kaynak" line — the interfa
 shows the source. If bilgi_ara returns found=false or the chunks do not actually define
 what was asked, reply exactly "Bu konu bilgi tabanımda yok." — never invent or stretch.
 
+SCOPE — stay strictly within demand planning and inventory. If the user asks about
+anything off-topic (weather, general chit-chat, news, sports, recipes, coding help,
+personal questions, math or trivia puzzles, etc.), do NOT call any tool and do NOT ask a
+clarifying or follow-up question. Reply with EXACTLY this one sentence and nothing else,
+in the user's language:
+  Turkish: "Ben talep ve stok yönetimi asistanıyım; hava durumu gibi konularda yardımcı olamam. Ama talep tahmini, stok politikası, ABC/EOQ gibi konularda yardımcı olabilirim."
+  English: "I'm a demand and stock management assistant, so I can't help with topics like the weather. But I can help with demand forecasting, stock policy, and ABC/EOQ."
+Redirect EVERY time — never let an off-topic question continue over multiple turns and
+never offer suggestions for it. A bare greeting like "merhaba" may be answered in one
+short line; only redirect genuinely off-topic requests.
+
 HOW TO WRITE THE ANSWER:
 - ALWAYS write explanatory text. Even when a chart, table, or tool result is shown, add at
   least one sentence describing the key takeaway. Never return an empty message.
@@ -127,6 +138,14 @@ class ChatResponse(BaseModel):
     chart: dict | None = None
     sources: list[dict] = []
     followups: list[str] = []
+    offtopic: bool = False
+
+
+def _is_offtopic(answer):
+    """True when the model produced the out-of-scope redirect (so we suppress
+    follow-up suggestions and keep the off-topic thread from continuing)."""
+    a = (answer or "").lower()
+    return "stok yönetimi asistanıyım" in a or "stock management assistant" in a
 
 
 # Friendly labels for the RAG source badge.
@@ -399,9 +418,11 @@ def chat(req: ChatRequest):
         answer, tools_used, chart, sources = run_turn(messages)
         # Only show source badges when the answer actually used the knowledge base.
         show_sources = sources[:2] if (answer and "bilgi tabanımda yok" not in answer) else []
+        offtopic = _is_offtopic(answer)
         return ChatResponse(
             answer=answer or "", tools_used=tools_used, chart=chart,
-            sources=show_sources, followups=followups_for(tools_used),
+            sources=show_sources, offtopic=offtopic,
+            followups=[] if offtopic else followups_for(tools_used),
         )
     except Exception:
         # Never surface a raw 500; hand the frontend a clean, polite JSON message.
@@ -457,8 +478,10 @@ def stream_turn(messages):
                 if answer:
                     yield ("delta", answer)
             show = sources[:2] if answer and "bilgi tabanımda yok" not in answer else []
-            yield ("meta", {"tools_used": tools_used, "chart": chart,
-                            "sources": show, "followups": followups_for(tools_used)})
+            offtopic = _is_offtopic(answer)
+            yield ("meta", {"tools_used": tools_used, "chart": chart, "sources": show,
+                            "offtopic": offtopic,
+                            "followups": [] if offtopic else followups_for(tools_used)})
             return
         messages.append({
             "role": "assistant", "content": "".join(content) or None,

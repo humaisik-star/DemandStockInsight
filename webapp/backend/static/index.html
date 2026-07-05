@@ -847,7 +847,7 @@
         if (cb) cb.onclick = () => navigator.clipboard.writeText(answer).then(() => {
           cb.textContent = T("copied"); setTimeout(() => cb.textContent = T("copy"), 1500);
         });
-        renderFollowups(followupsFor(meta && meta.tools_used));
+        renderFollowups(meta && meta.offtopic ? [] : followupsFor(meta && meta.tools_used));
         history.push({ role: "assistant", content: answer,
           chart: meta && meta.chart, tools: meta && meta.tools_used, sources: meta && meta.sources });
         persistCurrent();
