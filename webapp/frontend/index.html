@@ -15,6 +15,11 @@
       --radius: 14px; --radius-sm: 10px;
       --shadow: 0 2px 8px rgba(16,24,40,.06), 0 1px 2px rgba(16,24,40,.05);
       --shadow-md: 0 8px 24px rgba(16,24,40,.10);
+      /* Central design tokens for the custom UI components (select/tooltip/modal/toast).
+         Change these once to restyle every component consistently. */
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --ui-radius: var(--radius-sm); --ui-shadow: var(--shadow-md);
+      --ui-bg: var(--surface); --ui-border: var(--border);
     }
     :root[data-theme="dark"] {
       --primary: #3b82f6; --primary-2: #2563eb; --secondary: #60a5fa;
@@ -39,7 +44,7 @@
     * { box-sizing: border-box; }
     body {
       margin: 0; background: var(--bg); color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: var(--font);
       min-height: 100vh;
     }
     /* Top bar */
@@ -143,6 +148,53 @@
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
     .toast .t-undo { background: transparent; border: none; color: var(--accent); font-weight: 700; cursor: pointer; font-size: 13px; }
     .toast .t-undo:hover { text-decoration: underline; }
+
+    /* ===== Central custom UI components (select / tooltip / modal) ===== */
+    /* Custom select (native <select> kept hidden as the value/event source) */
+    .ui-select { position: relative; display: inline-flex; }
+    .ui-select > select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
+    .ui-select-btn { display: inline-flex; align-items: center; justify-content: space-between; gap: 8px;
+      width: 100%; background: var(--surface); color: var(--text); border: 1px solid var(--ui-border);
+      border-radius: var(--ui-radius); padding: 9px 12px; font-size: 13.5px; font-family: var(--font);
+      cursor: pointer; transition: border-color .15s; }
+    .ui-select-btn:hover, .ui-select.open .ui-select-btn { border-color: var(--primary); }
+    .ui-select-btn .chev { color: var(--muted); font-size: 10px; transition: transform .15s; }
+    .ui-select.open .ui-select-btn .chev { transform: rotate(180deg); }
+    .ui-select-menu { position: absolute; top: calc(100% + 5px); left: 0; min-width: 100%; z-index: 55;
+      background: var(--ui-bg); border: 1px solid var(--ui-border); border-radius: var(--ui-radius);
+      box-shadow: var(--ui-shadow); padding: 5px; display: none; max-height: 264px; overflow-y: auto; }
+    .ui-select.open .ui-select-menu { display: block; animation: rise .14s ease; }
+    .ui-opt { padding: 8px 10px; border-radius: calc(var(--ui-radius) - 3px); font-size: 13.5px;
+      cursor: pointer; white-space: nowrap; color: var(--text); }
+    .ui-opt:hover { background: var(--surface-2); }
+    .ui-opt.sel { color: var(--primary); font-weight: 600; }
+
+    /* Custom tooltip (driven by data-tip; high-contrast in both themes) */
+    .ui-tip { position: fixed; z-index: 90; background: var(--text); color: var(--bg);
+      font-size: 12px; font-family: var(--font); padding: 5px 9px; border-radius: calc(var(--ui-radius) - 3px);
+      box-shadow: var(--shadow); pointer-events: none; opacity: 0; transform: translate(-50%, 4px);
+      transition: opacity .12s, transform .12s; white-space: nowrap; max-width: 260px; }
+    .ui-tip.show { opacity: .96; transform: translate(-50%, 0); }
+
+    /* Custom modal / confirm dialog */
+    .ui-modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,.5); z-index: 80;
+      display: none; align-items: center; justify-content: center; padding: 20px; opacity: 0; transition: opacity .18s; }
+    .ui-modal-overlay.open { display: flex; opacity: 1; }
+    .ui-modal { background: var(--ui-bg); color: var(--text); border: 1px solid var(--ui-border);
+      border-radius: var(--radius); box-shadow: var(--shadow-md); max-width: 400px; width: 100%;
+      padding: 22px; font-family: var(--font); transform: translateY(10px); transition: transform .18s; }
+    .ui-modal-overlay.open .ui-modal { transform: none; }
+    .ui-modal h3 { margin: 0 0 8px; font-size: 16px; }
+    .ui-modal p { margin: 0 0 18px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .ui-modal-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+    .ui-btn { border-radius: var(--ui-radius); padding: 8px 16px; font-size: 13.5px; font-weight: 600;
+      cursor: pointer; font-family: var(--font); border: 1px solid var(--ui-border);
+      background: var(--surface-2); color: var(--text); transition: all .15s; }
+    .ui-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .ui-btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .ui-btn.primary:hover { background: var(--accent-2); color: #fff; }
+    .ui-btn.danger { background: var(--crit); border-color: var(--crit); color: #fff; }
+    .ui-btn.danger:hover { filter: brightness(1.08); color: #fff; }
     /* Overflow "⋯" menu (secondary actions) */
     .menu-wrap { position: relative; }
     .menu-panel { position: absolute; top: 46px; right: 0; min-width: 190px; background: var(--surface);
@@ -392,7 +444,7 @@
 <body>
   <header>
     <div class="bar">
-      <button class="theme-btn" id="sidebarBtn" data-i18n-title="hist_tip" title="Sohbet geçmişi">☰</button>
+      <button class="theme-btn" id="sidebarBtn" data-i18n-title="hist_tip" data-tip="Sohbet geçmişi">☰</button>
       <div class="brand"><span class="logo">📦</span> Demand &amp; Stock Insight</div>
       <nav>
         <button class="tab active" data-tab="chat" data-i18n="tab_chat">💬 Sohbet</button>
@@ -403,7 +455,7 @@
       </nav>
       <div class="spacer"></div>
       <div class="bell-wrap">
-        <button class="theme-btn" id="bellBtn" data-i18n-title="bell_tip" title="Bildirimler">🔔<span class="bell-badge" id="bellBadge" style="display:none">0</span></button>
+        <button class="theme-btn" id="bellBtn" data-i18n-title="bell_tip" data-tip="Bildirimler">🔔<span class="bell-badge" id="bellBadge" style="display:none">0</span></button>
         <div class="notif-panel" id="notifPanel">
           <div class="notif-head"><span data-i18n="notif_title">Kritik &amp; yeniden sipariş</span><span class="nh-count" id="notifCount"></span></div>
           <div class="notif-body" id="notifBody"></div>
@@ -413,10 +465,10 @@
           </div>
         </div>
       </div>
-      <button class="lang-btn" id="langBtn" title="Language / Dil">EN</button>
-      <button class="theme-btn" id="theme" title="Tema">🌙</button>
+      <button class="lang-btn" id="langBtn" data-tip="Language / Dil">EN</button>
+      <button class="theme-btn" id="theme" data-tip="Tema">🌙</button>
       <div class="menu-wrap">
-        <button class="theme-btn" id="menuBtn" data-i18n-title="menu_tip" title="Menü">⋯</button>
+        <button class="theme-btn" id="menuBtn" data-i18n-title="menu_tip" data-tip="Menü">⋯</button>
         <div class="menu-panel" id="menuPanel">
           <a class="menu-item" href="/report.pdf" data-i18n="pdf_btn">📄 PDF rapor</a>
         </div>
@@ -429,7 +481,7 @@
   <aside class="drawer" id="histDrawer">
     <div class="drawer-head">
       <span data-i18n="hist_title">Sohbet geçmişi</span>
-      <button class="drawer-close" id="histClose" title="Kapat">✕</button>
+      <button class="drawer-close" id="histClose" data-tip="Kapat">✕</button>
     </div>
     <button class="new-chat" id="newChat" data-i18n="hist_new">＋ Yeni sohbet</button>
     <div class="chat-list" id="chatList"></div>
@@ -454,7 +506,7 @@
       <div class="composer">
         <div class="inputrow">
           <textarea id="input" rows="1" data-i18n-ph="input_ph" placeholder="Talep, stok, ABC, EOQ hakkında sor..."></textarea>
-          <button id="micBtn" class="io-btn" data-i18n-title="mic_tip" title="Sesle sor">🎤</button>
+          <button id="micBtn" class="io-btn" data-i18n-title="mic_tip" data-tip="Sesle sor">🎤</button>
           <button id="send" data-i18n="send">Gönder</button>
         </div>
       </div>
@@ -557,6 +609,8 @@
   </main>
 
   <div class="toast" id="toast"></div>
+  <div class="ui-tip" id="uiTip"></div>
+  <div class="ui-modal-overlay" id="uiModal"></div>
 
   <script>
     const API = "";
@@ -593,6 +647,7 @@
         err: "⚠️ Bir aksaklık oldu, lütfen birkaç saniye sonra tekrar dene.", empty: "İşte istediğin sonuçlar 👇", unit_adet: "adet",
         hist_title: "Sohbet geçmişi", hist_new: "＋ Yeni sohbet", hist_empty: "Henüz kayıtlı sohbet yok.",
         hist_tip: "Sohbet geçmişi", hist_del: "Sohbeti sil", new_chat_title: "Yeni sohbet",
+        ui_ok: "Tamam", ui_cancel: "Vazgeç", del_confirm_t: "Sohbeti sil", del_confirm_m: "Bu sohbet kalıcı olarak silinecek. Emin misiniz?",
         dash_alerts: "Stok durumu (uyarılar)", dash_abc: "ABC dağılımı", dash_table: "Ürün tablosu",
         fin_title: "💰 Finansal özet", fin_loading: "Yükleniyor…",
         fin_desc: "Operasyonel çıktıların para karşılığı. Brüt marj ve holding maliyeti oranı varsayımdır.",
@@ -648,6 +703,7 @@
         err: "⚠️ Something went wrong, please try again in a moment.", empty: "Here are your results 👇", unit_adet: "units",
         hist_title: "Chat history", hist_new: "＋ New chat", hist_empty: "No saved chats yet.",
         hist_tip: "Chat history", hist_del: "Delete chat", new_chat_title: "New chat",
+        ui_ok: "OK", ui_cancel: "Cancel", del_confirm_t: "Delete chat", del_confirm_m: "This chat will be permanently deleted. Are you sure?",
         dash_alerts: "Stock status (alerts)", dash_abc: "ABC distribution", dash_table: "Product table",
         fin_title: "💰 Financial summary", fin_loading: "Loading…",
         fin_desc: "The operational outputs in money terms. Gross-margin and holding-cost rates are assumptions.",
@@ -713,7 +769,8 @@
       document.querySelectorAll("[data-i18n]").forEach(e => { const v = d[e.dataset.i18n]; if (v != null) e.textContent = v; });
       document.querySelectorAll("[data-i18n-ph]").forEach(e => { const v = d[e.dataset.i18nPh]; if (v != null) e.placeholder = v; });
       document.querySelectorAll("[data-i18n-html]").forEach(e => { const v = d[e.dataset.i18nHtml]; if (v != null) e.innerHTML = v; });
-      document.querySelectorAll("[data-i18n-title]").forEach(e => { const v = d[e.dataset.i18nTitle]; if (v != null) e.title = v; });
+      document.querySelectorAll("[data-i18n-title]").forEach(e => { const v = d[e.dataset.i18nTitle]; if (v != null) e.setAttribute("data-tip", v); });
+      document.querySelectorAll(".ui-select > select").forEach(s => s._uiSync && s._uiSync());
       if (typeof renderChatList === "function") renderChatList();
       if (typeof renderNotif === "function") renderNotif();
       document.querySelectorAll(".es-card").forEach(c => { const v = d[c.dataset.qk]; if (v != null) c.dataset.q = v; });
@@ -792,6 +849,7 @@
         const stores = [...new Set(INV.map(r => r["Store ID"]))].sort();
         $("#fStore").innerHTML = `<option value="">${T("f_all_stores")}</option>` +
           stores.map(s => `<option>${s}</option>`).join("");
+        if ($("#fStore")._uiSync) $("#fStore")._uiSync();
         renderTable();
       } catch (e) { $("#kpis").innerHTML = `<div class="muted">${e.message}</div>`; }
       loadFinancial();
@@ -1117,12 +1175,12 @@
         const t = (e.results[0][0].transcript || "").trim();
         if (t) { input.value = t; submit(); }
       };
-      recog.onend = () => { listening = false; micBtn.classList.remove("listening"); micBtn.title = T("mic_tip"); };
-      recog.onerror = () => { listening = false; micBtn.classList.remove("listening"); micBtn.title = T("mic_tip"); };
+      recog.onend = () => { listening = false; micBtn.classList.remove("listening"); micBtn.dataset.tip = T("mic_tip"); };
+      recog.onerror = () => { listening = false; micBtn.classList.remove("listening"); micBtn.dataset.tip = T("mic_tip"); };
       micBtn.onclick = () => {
         if (listening) { recog.stop(); return; }
         recog.lang = LANG === "tr" ? "tr-TR" : "en-US";
-        try { recog.start(); listening = true; micBtn.classList.add("listening"); micBtn.title = T("mic_listening"); }
+        try { recog.start(); listening = true; micBtn.classList.add("listening"); micBtn.dataset.tip = T("mic_listening"); }
         catch {}
       };
     } else {
@@ -1223,14 +1281,16 @@
         `<div class="chat-item${c.id === curId ? " active" : ""}" data-id="${c.id}">
            <div class="ci-main"><div class="ci-title">${esc(c.title || T("new_chat_title"))}</div>
              <div class="ci-date">${esc(fmtDate(c.ts))}</div></div>
-           <button class="ci-del" data-id="${c.id}" title="${esc(T("hist_del"))}">🗑</button>
+           <button class="ci-del" data-id="${c.id}" data-tip="${esc(T("hist_del"))}">🗑</button>
          </div>`).join("");
       list.querySelectorAll(".chat-item").forEach(el => el.onclick = e => {
         if (e.target.closest(".ci-del")) return;
         loadChat(el.dataset.id);
       });
-      list.querySelectorAll(".ci-del").forEach(btn => btn.onclick = e => {
-        e.stopPropagation(); deleteChat(btn.dataset.id);
+      list.querySelectorAll(".ci-del").forEach(btn => btn.onclick = async e => {
+        e.stopPropagation();
+        if (await ui.confirm({ title: T("del_confirm_t"), message: T("del_confirm_m"),
+                               ok: T("hist_del"), danger: true })) deleteChat(btn.dataset.id);
       });
     }
 
@@ -1355,6 +1415,7 @@
           const stores = [...new Set(notifRows.map(r => r["Store ID"]))].sort();
           store.innerHTML = `<option value="">${T("f_all_stores")}</option>` + stores.map(s => `<option>${s}</option>`).join("");
         } else if (store.options[0]) store.options[0].textContent = T("f_all_stores");
+        if (store._uiSync) store._uiSync();
       }
       const totActive = notifRows.filter(r => !isOrdered(skuKey(r))).length;
       const totOrdered = notifRows.filter(r => isOrdered(skuKey(r))).length;
@@ -1455,6 +1516,85 @@
       catch {}
       loadNotif();
     })();
+
+    // ===== Central custom UI components (one module for select / tooltip / modal) =====
+    // Custom <select>: keep the native element hidden as the value/event source, so
+    // all existing code (.value, "input"/"change" listeners, filtering) keeps working.
+    function enhanceSelect(sel) {
+      if (sel.dataset.enhanced) return;
+      sel.dataset.enhanced = "1";
+      const wrap = document.createElement("div"); wrap.className = "ui-select";
+      sel.parentNode.insertBefore(wrap, sel); wrap.appendChild(sel);
+      const btn = document.createElement("button"); btn.type = "button"; btn.className = "ui-select-btn";
+      const lbl = document.createElement("span"); lbl.className = "lbl";
+      const chev = document.createElement("span"); chev.className = "chev"; chev.textContent = "▾";
+      btn.append(lbl, chev);
+      const menu = document.createElement("div"); menu.className = "ui-select-menu";
+      wrap.append(btn, menu);
+      const sync = () => { const o = sel.options[sel.selectedIndex]; lbl.textContent = o ? o.text : ""; };
+      const close = () => wrap.classList.remove("open");
+      function open() {
+        menu.innerHTML = "";
+        [...sel.options].forEach((o, i) => {
+          const it = document.createElement("div");
+          it.className = "ui-opt" + (i === sel.selectedIndex ? " sel" : "");
+          it.textContent = o.text;
+          it.onclick = () => {
+            sel.selectedIndex = i; sync(); close();
+            sel.dispatchEvent(new Event("input", { bubbles: true }));
+            sel.dispatchEvent(new Event("change", { bubbles: true }));
+          };
+          menu.appendChild(it);
+        });
+        wrap.classList.add("open");
+      }
+      btn.onclick = e => { e.stopPropagation(); wrap.classList.contains("open") ? close() : open(); };
+      document.addEventListener("click", e => { if (!wrap.contains(e.target)) close(); });
+      sel.addEventListener("change", sync);
+      sel._uiSync = sync;              // call after programmatically changing options/value
+      sync();
+    }
+    document.querySelectorAll("select").forEach(enhanceSelect);
+
+    // Custom tooltip: driven by [data-tip]; one shared element, event-delegated.
+    const uiTip = $("#uiTip");
+    function showTip(el) {
+      const txt = el.getAttribute("data-tip"); if (!txt) return;
+      uiTip.textContent = txt; uiTip.classList.add("show");
+      const r = el.getBoundingClientRect(), tr = uiTip.getBoundingClientRect();
+      let left = r.left + r.width / 2;
+      left = Math.max(tr.width / 2 + 6, Math.min(left, innerWidth - tr.width / 2 - 6));
+      let top = r.bottom + 8;
+      if (top + tr.height > innerHeight - 6) top = r.top - tr.height - 8;   // flip above
+      uiTip.style.left = left + "px"; uiTip.style.top = top + "px";
+    }
+    const hideTip = () => uiTip.classList.remove("show");
+    document.addEventListener("mouseover", e => { const el = e.target.closest("[data-tip]"); if (el) showTip(el); });
+    document.addEventListener("mouseout", e => { const el = e.target.closest("[data-tip]"); if (el) hideTip(); });
+    document.addEventListener("focusin", e => { const el = e.target.closest("[data-tip]"); if (el) showTip(el); });
+    document.addEventListener("focusout", hideTip);
+    addEventListener("scroll", hideTip, true);
+
+    // Custom modal / confirm: promise-based, themed, keyboard + backdrop dismissable.
+    const uiModal = $("#uiModal");
+    function uiConfirm({ title, message, ok, cancel, danger } = {}) {
+      return new Promise(resolve => {
+        uiModal.innerHTML = `<div class="ui-modal" role="dialog" aria-modal="true">
+          ${title ? `<h3>${esc(title)}</h3>` : ""}${message ? `<p>${esc(message)}</p>` : ""}
+          <div class="ui-modal-actions">
+            ${cancel === null ? "" : `<button class="ui-btn" data-r="0">${esc(cancel || T("ui_cancel"))}</button>`}
+            <button class="ui-btn ${danger ? "danger" : "primary"}" data-r="1">${esc(ok || T("ui_ok"))}</button>
+          </div></div>`;
+        const done = v => { uiModal.classList.remove("open"); document.removeEventListener("keydown", onKey); resolve(v); };
+        function onKey(e) { if (e.key === "Escape") done(false); }
+        uiModal.querySelectorAll("[data-r]").forEach(b => b.onclick = () => done(b.dataset.r === "1"));
+        uiModal.onclick = e => { if (e.target === uiModal) done(false); };
+        document.addEventListener("keydown", onKey);
+        uiModal.classList.add("open");
+      });
+    }
+    const uiAlert = opts => uiConfirm({ ...opts, cancel: null });
+    window.ui = { confirm: uiConfirm, alert: uiAlert, toast, tip: showTip };
 
     // Keep the chat column height correct under the header (handles wrapping).
     const fitChat = () => document.documentElement.style.setProperty(
